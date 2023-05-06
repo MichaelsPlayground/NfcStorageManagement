@@ -105,7 +105,7 @@ public class CryptoManager {
             Cipher cipher = Cipher.getInstance(TRANSFORMATION_GCM);
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, gcmParameterSpec);
             ciphertext = cipher.doFinal(plaintext);
-            System.out.println("nonce length: " + cipher.getIV().length);
+            //System.out.println("nonce length: " + cipher.getIV().length);
             output[0] = salt;
             output[1] = cipher.getIV();
             output[2] = ciphertext;
@@ -119,9 +119,9 @@ public class CryptoManager {
     public static byte[] aes256GcmPbkdf2Sha256Decryption2(byte[] salt, byte[] nonce, byte[] ciphertext, char[] passphrase) {
         byte[] plaintext = new byte[0];
         // todo sanity check for correct lengths of salt, nonce and minimum length ciphertext ?
-        System.out.println("salt l: " + salt.length + "d: " + bytesToHex(salt));
-        System.out.println("nonc l: " + nonce.length + "d: " + bytesToHex(nonce));
-        System.out.println("cite l: " + ciphertext.length + "d: " + bytesToHex(ciphertext));
+        //System.out.println("salt l: " + salt.length + "d: " + bytesToHex(salt));
+        //System.out.println("nonc l: " + nonce.length + "d: " + bytesToHex(nonce));
+        //System.out.println("cite l: " + ciphertext.length + "d: " + bytesToHex(ciphertext));
         SecretKeyFactory secretKeyFactory = null;
         try {
             secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
@@ -148,11 +148,11 @@ public class CryptoManager {
         salt = java.util.Arrays.copyOfRange(completeCiphertext, 0, 32);
         nonce = java.util.Arrays.copyOfRange(completeCiphertext, 32, 44);
         ciphertext = java.util.Arrays.copyOfRange(completeCiphertext, 44, completeCiphertext.length);
-        System.out.println("*** completeCiphertext length: " + completeCiphertext.length);
-        System.out.println("complete:" + bytesToHex(completeCiphertext));
-        System.out.println("salt l: " + salt.length + "d: " + bytesToHex(salt));
-        System.out.println("iv l: " + nonce.length + "d: " + bytesToHex(nonce));
-        System.out.println("cite l: " + ciphertext.length + "d: " + bytesToHex(ciphertext));
+        //System.out.println("*** completeCiphertext length: " + completeCiphertext.length);
+        //System.out.println("complete:" + bytesToHex(completeCiphertext));
+        //System.out.println("salt l: " + salt.length + "d: " + bytesToHex(salt));
+        //System.out.println("iv l: " + nonce.length + "d: " + bytesToHex(nonce));
+        //System.out.println("cite l: " + ciphertext.length + "d: " + bytesToHex(ciphertext));
         SecretKeyFactory secretKeyFactory = null;
         try {
             secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");

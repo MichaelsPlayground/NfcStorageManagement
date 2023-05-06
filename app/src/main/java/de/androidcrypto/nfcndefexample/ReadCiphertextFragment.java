@@ -72,8 +72,9 @@ public class ReadCiphertextFragment extends Fragment implements NfcAdapter.Reade
     }
 
     TextView ndefMessage;
-    Button readNdefMessage, writeNdefMessage, writeCiphertext, decryptCiphertext;
+    Button decryptCiphertext;
     String ndefMessageString;
+    com.google.android.material.textfield.TextInputLayout saltLayout, nonceLayout, ciphertextLayout, passphraseLayout, decryptedPlaintextLayout;
 
     TextView ciphertextFound;
     TextView salt, nonce, ciphertext; // data shown as hex string
@@ -108,6 +109,11 @@ public class ReadCiphertextFragment extends Fragment implements NfcAdapter.Reade
         plaintext = getView().findViewById(R.id.tvPlaintextDecrypted);
         decryptCiphertext = getView().findViewById(R.id.btnDecryptCiphertext);
         passphraseDecryption = getView().findViewById(R.id.etPassphraseDecryption);
+        saltLayout = getView().findViewById(R.id.tvNdefSaltLayout);
+        nonceLayout = getView().findViewById(R.id.tvNdefNonceLayout);
+        ciphertextLayout = getView().findViewById(R.id.tvNdefCiphertextLayout);
+        passphraseLayout = getView().findViewById(R.id.etPassphraseDecryptionLayout);
+        decryptedPlaintextLayout = getView().findViewById(R.id.tvPlaintextDecryptedLayout);
 
         //doVibrate();
         decryptCiphertext.setOnClickListener(new View.OnClickListener() {
@@ -228,21 +234,12 @@ public class ReadCiphertextFragment extends Fragment implements NfcAdapter.Reade
                     if (checkCiphertextIsPresent()) {
                         getActivity().runOnUiThread(() -> {
                             salt.setText(bytesToHexNpe(saltBytes));
-                        });
-                        getActivity().runOnUiThread(() -> {
                             nonce.setText(bytesToHexNpe(nonceBytes));
-                        });
-                        getActivity().runOnUiThread(() -> {
                             ciphertext.setText(bytesToHexNpe(ciphertextBytes));
-                        });
-                        getActivity().runOnUiThread(() -> {
                             ciphertextFound.setVisibility(View.VISIBLE);
-                        });
-                        getActivity().runOnUiThread(() -> {
                             passphraseDecryption.setVisibility(View.VISIBLE);
-                        });
-                        getActivity().runOnUiThread(() -> {
                             decryptCiphertext.setVisibility(View.VISIBLE);
+                            setLayoutToVisible();
                         });
                     }
                 }
@@ -319,8 +316,31 @@ public class ReadCiphertextFragment extends Fragment implements NfcAdapter.Reade
             ciphertextFound.setVisibility(View.GONE);
             passphraseDecryption.setVisibility(View.GONE);
             decryptCiphertext.setVisibility(View.GONE);
+            setLayoutVisibilty(false);
+        });
+    }
+
+    private void setLayoutToVisible() {
+        getActivity().runOnUiThread(() -> {
+            setLayoutVisibilty(true);
         });
 
+    }
+
+    private void setLayoutVisibilty(boolean isVisible) {
+        if (isVisible) {
+            saltLayout.setVisibility(View.VISIBLE);
+            nonceLayout.setVisibility(View.VISIBLE);
+            ciphertextLayout.setVisibility(View.VISIBLE);
+            passphraseLayout.setVisibility(View.VISIBLE);
+            decryptedPlaintextLayout.setVisibility(View.VISIBLE);
+        } else {
+            saltLayout.setVisibility(View.GONE);
+            nonceLayout.setVisibility(View.GONE);
+            ciphertextLayout.setVisibility(View.GONE);
+            passphraseLayout.setVisibility(View.GONE);
+            decryptedPlaintextLayout.setVisibility(View.GONE);
+        }
     }
 
 }

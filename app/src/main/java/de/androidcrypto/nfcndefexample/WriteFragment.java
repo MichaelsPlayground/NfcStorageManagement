@@ -17,6 +17,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
+import android.nfc.tech.NdefFormatable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -128,7 +129,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
         String[] type = new String[]{
                 "Text", "URI", "Telephone number", "Coordinate", "Coordinate userinfo", "StreetView",
-                "Address", "Google navigation", "Email", "Application", "Target address"};
+                "Address", "Google navigation", "Email", "Application"};
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
                 getView().getContext(),
                 R.layout.drop_down_item,
@@ -163,8 +164,8 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
                         inputSchemeEmail();
                         break;
                     }
-                    case "Telefone number": {
-                        inputSchemeTelefoneNumber();
+                    case "Telephone number": {
+                        inputSchemeTelephoneNumber();
                         break;
                     }
                     case "Coordinate": {
@@ -208,9 +209,9 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeText() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a line of text";
+        String description = "writes an NDEF record with a line of text";
         typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter a textline");
+        inputField1Decoration.setHint("Enter a text line");
         typeDescription.setVisibility(View.VISIBLE);
         inputField1Decoration.setVisibility(View.VISIBLE);
         addTimestampToData.setVisibility(View.VISIBLE);
@@ -220,7 +221,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeUri() {
         hideAllInputFields();
-        String description = "writes a NDEF record with an URI";
+        String description = "writes an NDEF record with an URI";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter an URI including https://");
         typeDescription.setVisibility(View.VISIBLE);
@@ -229,11 +230,11 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
         inputField1.setText("https://");
     }
 
-    private void inputSchemeTelefoneNumber() {
+    private void inputSchemeTelephoneNumber() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a telefone number";
+        String description = "writes an NDEF record with a telephone number";
         typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter a telefone number");
+        inputField1Decoration.setHint("Enter a telephone number");
         typeDescription.setVisibility(View.VISIBLE);
         inputField1Decoration.setVisibility(View.VISIBLE);
         resultNfcWriting.setVisibility(View.VISIBLE);
@@ -242,7 +243,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeEmail() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a complete Email";
+        String description = "writes an NDEF record with a complete Email";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter an email address for the recipient");
         inputField2Decoration.setHint("Enter the email subject");
@@ -260,7 +261,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeStreetview() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a Google streetview link";
+        String description = "writes an NDEF record with a Google streetview link";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter coordinates (comma separated)");
         typeDescription.setVisibility(View.VISIBLE);
@@ -271,7 +272,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeCoordinate() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a coordinate";
+        String description = "writes an NDEF record with a coordinate";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter coordinates (comma separated)");
         typeDescription.setVisibility(View.VISIBLE);
@@ -282,7 +283,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeCoordinateUserinfo() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a coordinate and user information";
+        String description = "writes an NDEF record with a coordinate and user information";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter coordinates (comma separated)");
         inputField2Decoration.setHint("Enter the user information");
@@ -296,7 +297,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeAddress() {
         hideAllInputFields();
-        String description = "writes a NDEF record with an address for Google maps";
+        String description = "writes an NDEF record with an address for Google maps";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter an street with (optional) house number");
         inputField2Decoration.setHint("Enter the zip code");
@@ -313,7 +314,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
 
     private void inputSchemeGoogleNavigation() {
         hideAllInputFields();
-        String description = "writes a NDEF record with a target address for Google navigation";
+        String description = "writes an NDEF record with a target address for Google navigation";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter an street with (optional) house number");
         inputField2Decoration.setHint("Enter the zip code");
@@ -328,9 +329,10 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
         inputField3.setText("Essen");
     }
 
+
     private void inputSchemeApplication() {
         hideAllInputFields();
-        String description = "writes a NDEF record with an application to start";
+        String description = "writes an NDEF record with an application to start";
         typeDescription.setText(description);
         inputField1Decoration.setHint("Enter a packet name");
         typeDescription.setVisibility(View.VISIBLE);
@@ -373,7 +375,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
                     ndefMessage = new NdefMessage(ndefRecord1);
                     break;
                 }
-                case "Telefone number": {
+                case "Telephone number": {
                     String data = inputData1;
                     String completeData = "tel:" + data;
                     ndefRecord1 = NdefRecord.createUri(completeData);
@@ -453,7 +455,7 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
                     return;
                 }
 
-                // check that the tag has sufficiant memory to write the ndef message
+                // check that the tag has sufficient memory to write the ndef message
                 int ndefMaxSize = mNdef.getMaxSize();
                 int messageSize = ndefMessage.toByteArray().length;
                 if (messageSize > ndefMaxSize) {
@@ -465,14 +467,16 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
                 // Success if got to here
                 showMessage("write to NFC success, total message size is " + messageSize);
             } catch (FormatException e) {
-                showMessage("FormatException: " + e);
+                showMessage("FormatException: " + e.getMessage());
                 // if the NDEF Message to write is malformed
             } catch (TagLostException e) {
-                showMessage("TagLostException: " + e);
+                showMessage("TagLostException: " + e.getMessage());
                 // Tag went out of range before operations were complete
             } catch (IOException e) {
                 // if there is an I/O failure, or the operation is cancelled
-                showMessage("IOException: " + e);
+                showMessage("IOException: " + e.getMessage() + " I'm trying to format the tag... please try again");
+                // try to format the tag
+                formatNdef(tag);
             } finally {
                 // Be nice and try and close the tag to
                 // Disable I/O operations to the tag from this TagTechnology object, and release resources.
@@ -480,13 +484,39 @@ public class WriteFragment extends Fragment implements NfcAdapter.ReaderCallback
                     mNdef.close();
                 } catch (IOException e) {
                     // if there is an I/O failure, or the operation is cancelled
-                    showMessage("IOException: " + e);
+                    showMessage("IOException on close: " + e.getMessage());
                 }
             }
             doVibrate(getActivity());
             playSinglePing(getContext());
         } else {
-            showMessage("mNdef is null");
+            showMessage("mNdef is null, not an NDEF formatted tag, try to format the tag");
+            // trying to format the tag
+            formatNdef(tag);
+        }
+    }
+
+    private void formatNdef(Tag tag) {
+        // trying to format the tag
+        NdefFormatable format = NdefFormatable.get(tag);
+        if(format != null){
+            try {
+                format.connect();
+                format.format(new NdefMessage(new NdefRecord(NdefRecord.TNF_EMPTY, null, null, null)));
+                format.close();
+                showMessage("Tag formatted, try again to write on tag");
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                showMessage("Failed to connect");
+                e.printStackTrace();
+            } catch (FormatException e) {
+                // TODO Auto-generated catch block
+                showMessage("Failed Format");
+                e.printStackTrace();
+            }
+        }
+        else {
+            showMessage("Tag not formattable or already formatted to Ndef");
         }
     }
 
