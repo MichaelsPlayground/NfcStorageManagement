@@ -1,23 +1,17 @@
-package de.androidcrypto.nfcndefexample;
+package de.androidcrypto.nfcstoragemanagement;
 
-import static android.content.Context.VIBRATOR_SERVICE;
-
-import static de.androidcrypto.nfcndefexample.Utils.bytesToHexNpe;
-import static de.androidcrypto.nfcndefexample.Utils.doVibrate;
-import static de.androidcrypto.nfcndefexample.Utils.playSinglePing;
+import static de.androidcrypto.nfcstoragemanagement.Utils.bytesToHexNpe;
+import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
+import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaPlayer;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;

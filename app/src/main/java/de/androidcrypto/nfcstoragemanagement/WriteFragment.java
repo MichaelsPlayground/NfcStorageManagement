@@ -1,14 +1,9 @@
-package de.androidcrypto.nfcndefexample;
+package de.androidcrypto.nfcstoragemanagement;
 
-import static android.content.Context.VIBRATOR_SERVICE;
+import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
+import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
-import static de.androidcrypto.nfcndefexample.Utils.doVibrate;
-import static de.androidcrypto.nfcndefexample.Utils.playSinglePing;
-
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
@@ -18,21 +13,14 @@ import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.CompoundButton;
-import android.widget.RadioButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,10 +30,6 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.io.IOException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * A simple {@link Fragment} subclass.
