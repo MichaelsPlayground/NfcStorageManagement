@@ -38,11 +38,14 @@ public class MainActivity extends AppCompatActivity {
             selectedFragment = new ReadFragment();
         } else if (itemId == R.id.read_ciphertext) {
             selectedFragment = new ReadCiphertextFragment();
-        } else if (itemId == R.id.write) {
-            selectedFragment = new WriteFragment();
-        } else if (itemId == R.id.write_ciphertext) {
-            selectedFragment = new WriteCiphertextFragment();
-        }
+        } else if (itemId == R.id.activate) {
+            selectedFragment = new ActivateFragment();
+        } else if (itemId == R.id.ndef_settings) {
+            selectedFragment = new NdefSettingsFragment();
+        /*
+        } else if (itemId == R.id.ndef_settings) {
+            selectedFragment = new NdefSettingsFragment();*/
+      }
 
         /*
         if (itemId == R.id.home) {

@@ -17,13 +17,12 @@
         android:title="Read Encr" />
 
     <item
-        android:id="@+id/activate"
-        android:icon="@drawable/outline_attractions_24"
-        android:title="activate" />
+        android:id="@+id/write"
+        android:icon="@drawable/nfc_icon_w2"
+        android:title="Write" />
 
     <item
-        android:id="@+id/ndef_settings"
-        android:icon="@drawable/outline_settings_24"
-        android:title="NDEF settings" />
-
+        android:id="@+id/write_ciphertext"
+        android:icon="@drawable/nfc_icon_we2"
+        android:title="Write Encr" />
 </menu>

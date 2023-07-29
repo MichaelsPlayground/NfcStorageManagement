@@ -4,10 +4,10 @@ This is a Storage Management Application that helps in managing all cartons and 
 The app is using NFC tags of type NXP NTAG 21x to easily identify each position by simply reading the tag with 
 an NFC reader embedded in most modern Android smartphones.
 
-There are 3 different tag types available for the NTAG 21x familiy:
-- NTAG213 with 144 bytes of freely available user memory
-- NTAG215 with 540 bytes of freely available user memory
-- NTAG216 with 888 bytes of freely available user memory
+There are 3 different tag types available for the NTAG 21x family:
+- NTAG213 with 144 bytes of freely available user memory, 137 bytes NDEF capacity
+- NTAG215 with 504 bytes of freely available user memory, 480 bytes NDEF capacity
+- NTAG216 with 888 bytes of freely available user memory, 868 bytes NDEF capacity
 
 The tags do have a build-in NDEF capability so they are read- and writable with common readers. The provide 
 a 7-byte serial number UID) that was programmed by the  manufacturer and are immutable. As additional 
