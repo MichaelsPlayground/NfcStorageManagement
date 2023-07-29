@@ -2,6 +2,7 @@ package de.androidcrypto.nfcstoragemanagement;
 
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
+import static de.androidcrypto.nfcstoragemanagement.Utils.testBit;
 
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +21,7 @@ import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +29,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -54,19 +57,13 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
     private String mParam1;
     private String mParam2;
 
-    com.google.android.material.textfield.TextInputLayout inputField1Decoration, inputField2Decoration, inputField3Decoration;
-    com.google.android.material.textfield.TextInputEditText typeDescription, inputField1, inputField2, inputField3, resultNfcWriting;
-    SwitchMaterial addTimestampToData;
+    com.google.android.material.textfield.TextInputEditText resultNfcWriting;
+    RadioButton rbActivateGetStatus, rbActivateOn, rbActivateOff;
 
-    private Button runActivateAction;
-
-    AutoCompleteTextView autoCompleteTextView;
-    com.google.android.material.textfield.TextInputLayout dataToSendLayout;
-    com.google.android.material.textfield.TextInputEditText dataToSend;
-    //private final String DEFAULT_URL = "https://www.google.de/maps/@34.7967917,-111.765671,3a,66.6y,15.7h,102.19t/data=!3m6!1e1!3m4!1sFV61wUEyLNwFi6zHHaKMcg!2e0!7i16384!8i8192";
-    private final String DEFAULT_URL = "https://github.com/AndroidCrypto?tab=repositories";
     private NfcAdapter mNfcAdapter;
     private NfcA nfcA;
+
+    private int identifiedNtagConfigurationPage; // this  is the stating point for any work on configuration
 
     public ActivateFragment() {
         // Required empty public constructor
@@ -112,231 +109,12 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
 
-        runActivateAction = getView().findViewById(R.id.btnActivateStatus);
-
-
-        typeDescription = getView().findViewById(R.id.etMainTypeDescription);
-        inputField1 = getView().findViewById(R.id.etMainInputline1);
-        inputField1Decoration = getView().findViewById(R.id.etMainInputline1Decoration);
-        inputField2 = getView().findViewById(R.id.etMainInputline2);
-        inputField2Decoration = getView().findViewById(R.id.etMainInputline2Decoration);
-        inputField3 = getView().findViewById(R.id.etMainInputline3);
-        inputField3Decoration = getView().findViewById(R.id.etMainInputline3Decoration);
-        resultNfcWriting = getView().findViewById(R.id.etMainResult);
-        addTimestampToData = getView().findViewById(R.id.swMainAddTimestampSwitch);
-
-        String[] type = new String[]{
-                "Text", "URI", "Telephone number", "Coordinate", "Coordinate userinfo", "StreetView",
-                "Address", "Google navigation", "Email", "Application"};
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
-                getView().getContext(),
-                R.layout.drop_down_item,
-                type);
-
-        autoCompleteTextView = getView().findViewById(R.id.ndef_type);
-        autoCompleteTextView.setAdapter(arrayAdapter);
+        resultNfcWriting = getView().findViewById(R.id.etActivateResult);
+        rbActivateGetStatus = getView().findViewById(R.id.rbActivateShowStatus);
+        rbActivateOn = getView().findViewById(R.id.rbActivateOn);
+        rbActivateOff = getView().findViewById(R.id.rbActivateOff);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
-
-        hideAllInputFields();
-
-        autoCompleteTextView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String choiceString = autoCompleteTextView.getText().toString();
-                //Toast.makeText(MainActivity.this, autoCompleteTextView.getText().toString(), Toast.LENGTH_SHORT).show();
-                switch (choiceString) {
-                    case "Text": {
-                        inputSchemeText();
-                        break;
-                    }
-                    case "URI": {
-                        inputSchemeUri();
-                        break;
-                    }
-                    case "StreetView": {
-                        inputSchemeStreetview();
-                        break;
-                    }
-                    case "Email": {
-                        inputSchemeEmail();
-                        break;
-                    }
-                    case "Telephone number": {
-                        inputSchemeTelephoneNumber();
-                        break;
-                    }
-                    case "Coordinate": {
-                        inputSchemeCoordinate();
-                        break;
-                    }
-                    case "Coordinate userinfo": {
-                        inputSchemeCoordinateUserinfo();
-                        break;
-                    }
-                    case "Address": {
-                        inputSchemeAddress();
-                        break;
-                    }
-                    case "Google navigation": {
-                        inputSchemeGoogleNavigation();
-                        break;
-                    }
-                    case "Application": {
-                        inputSchemeApplication();
-                        break;
-                    }
-                    default: {
-                        hideAllInputFields();
-                        break;
-                    }
-                }
-            }
-        });
-
-    }
-
-    private void hideAllInputFields() {
-        typeDescription.setVisibility(View.GONE);
-        inputField1Decoration.setVisibility(View.GONE);
-        inputField2Decoration.setVisibility(View.GONE);
-        inputField3Decoration.setVisibility(View.GONE);
-        addTimestampToData.setVisibility(View.GONE);
-        resultNfcWriting.setVisibility(View.GONE);
-    }
-
-    private void inputSchemeText() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a line of text";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter a text line");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        addTimestampToData.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("sample text");
-    }
-
-    private void inputSchemeUri() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with an URI";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter an URI including https://");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("https://");
-    }
-
-    private void inputSchemeTelephoneNumber() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a telephone number";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter a telephone number");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("0049201234567890");
-    }
-
-    private void inputSchemeEmail() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a complete Email";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter an email address for the recipient");
-        inputField2Decoration.setHint("Enter the email subject");
-        inputField3Decoration.setHint("Enter the email body");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        inputField2Decoration.setVisibility(View.VISIBLE);
-        inputField3Decoration.setVisibility(View.VISIBLE);
-        addTimestampToData.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("androidcrypto@gmx.de");
-        inputField2.setText("sample email subject");
-        inputField3.setText("Hello AndroidCrypto,\nThis is a sample mail.");
-    }
-
-    private void inputSchemeStreetview() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a Google streetview link";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter coordinates (comma separated)");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("34.792345,-111.762531");
-    }
-
-    private void inputSchemeCoordinate() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a coordinate";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter coordinates (comma separated)");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("34.792345,-111.762531");
-    }
-
-    private void inputSchemeCoordinateUserinfo() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a coordinate and user information";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter coordinates (comma separated)");
-        inputField2Decoration.setHint("Enter the user information");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        inputField2Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("34.792345,-111.762531");
-        inputField2.setText("Bell Rock Sedona view point");
-    }
-
-    private void inputSchemeAddress() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with an address for Google maps";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter an street with (optional) house number");
-        inputField2Decoration.setHint("Enter the zip code");
-        inputField3Decoration.setHint("Enter the city");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        inputField2Decoration.setVisibility(View.VISIBLE);
-        inputField3Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("Selmastr 5");
-        inputField2.setText("45127");
-        inputField3.setText("Essen");
-    }
-
-    private void inputSchemeGoogleNavigation() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with a target address for Google navigation";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter an street with (optional) house number");
-        inputField2Decoration.setHint("Enter the zip code");
-        inputField3Decoration.setHint("Enter the city");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        inputField2Decoration.setVisibility(View.VISIBLE);
-        inputField3Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("Selmastr 5");
-        inputField2.setText("45127");
-        inputField3.setText("Essen");
-    }
-
-
-    private void inputSchemeApplication() {
-        hideAllInputFields();
-        String description = "writes an NDEF record with an application to start";
-        typeDescription.setText(description);
-        inputField1Decoration.setHint("Enter a packet name");
-        typeDescription.setVisibility(View.VISIBLE);
-        inputField1Decoration.setVisibility(View.VISIBLE);
-        resultNfcWriting.setVisibility(View.VISIBLE);
-        inputField1.setText("com.inkwired.droidinfo");
     }
 
     /**
@@ -353,17 +131,19 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
             nfcA = NfcA.get(tag);
 
             if (nfcA != null) {
-                showMessage("NFC tag is Nfca compatible");
+                writeToUiAppend(resultNfcWriting,"NFC tag is Nfca compatible");
                 nfcA.connect();
                 // check that the tag is a NTAG213/215/216 manufactured by NXP - stop if not
                 String ntagVersion = NfcIdentifyNtag.checkNtagType(nfcA, tag.getId());
-                if (!ntagVersion.equals("216")) {
-                    showMessage("NFC tag is NOT of type NXP NTAG216");
+                if ((!ntagVersion.equals("213")) && (!ntagVersion.equals("215")) && (!ntagVersion.equals("216"))) {
+                    writeToUiAppend(resultNfcWriting,"NFC tag is NOT of type NXP NTAG213/215/216, aborted");
                     return;
                 }
 
                 int nfcaMaxTranceiveLength = nfcA.getMaxTransceiveLength(); // important for the readFast command
                 int ntagPages = NfcIdentifyNtag.getIdentifiedNtagPages();
+                identifiedNtagConfigurationPage = NfcIdentifyNtag.getIdentifiedNtagConfigurationPage();
+                writeToUiAppend(resultNfcWriting, "The configuration is starting in page " + identifiedNtagConfigurationPage);
                 int ntagMemoryBytes = NfcIdentifyNtag.getIdentifiedNtagMemoryBytes();
                 String tagIdString = Utils.getDec(tag.getId());
                 String nfcaContent = "raw data of " + NfcIdentifyNtag.getIdentifiedNtagType() + "\n" +
@@ -373,36 +153,305 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                         "tag ID: " + Utils.bytesToHexNpe(NfcIdentifyNtag.getIdentifiedNtagId()) + "\n" +
                         "tag ID: " + tagIdString + "\n";
                 nfcaContent = nfcaContent + "maxTranceiveLength: " + nfcaMaxTranceiveLength + " bytes\n";
+                writeToUiAppend(resultNfcWriting, nfcaContent);
                 // read the complete memory depending on ntag type
                 byte[] ntagMemory = new byte[ntagMemoryBytes];
                 // read the content of the tag in several runs
                 byte[] response = new byte[0];
 
-                try {
+                boolean isGetActivateStatus = rbActivateGetStatus.isChecked();
+                boolean isActivateOn = rbActivateOn.isChecked();
+                boolean isActivateOff = rbActivateOff.isChecked();
 
-                    response = writeEnableUidCounterMirrorNdef(nfcA);
-                    if (response == null) {
-                        writeToUiAppend(responseField, "Enabling the Uid + counter mirror: FAILURE");
-                        return;
-                    } else {
-                        writeToUiAppend(responseField, "Enabling the Uid + counter mirror: SUCCESS - code: " + Utils.bytesToHex(response));
+                try {
+                    if (isGetActivateStatus) {
+                        response = getStatusUidMirrorNdef(nfcA);
+
+                        // read the complete ndef message and find the placeholder
+                        // as I'm limiting the maximum ndef message we can read all data in one run
+                        // build the matching strings for ud and mac
+
+                        StringBuilder sb = new StringBuilder();
+                        // uid
+                        sb.append(NdefSettingsFragment.UID_HEADER);
+                        sb.append(NdefSettingsFragment.UID_NAME);
+                        sb.append(NdefSettingsFragment.UID_FOOTER);
+                        String uidMatchString = sb.toString();
+                        // mac
+                        StringBuilder sb2 = new StringBuilder();
+                        sb2.append(NdefSettingsFragment.MAC_HEADER);
+                        sb2.append(NdefSettingsFragment.MAC_NAME);
+                        sb2.append(NdefSettingsFragment.MAC_FOOTER);
+                        String macMatchString = sb.toString();
+
+                        // todo read all user memory pages and search for math strings
+
+                        if (response == null) {
+                            writeToUiAppend(resultNfcWriting, "status of the UID mirror: FAILURE");
+                            return;
+                        } else {
+                            writeToUiAppend(resultNfcWriting, "status of the UID mirror: SUCCESS - code: " + Utils.bytesToHexNpe(response));
+                        }
+
                     }
+                    if (isActivateOn) {
+                        response = writeEnableUidMirrorNdef(nfcA);
+                        if (response == null) {
+                            writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: FAILURE");
+                            return;
+                        } else {
+                            writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: SUCCESS - code: " + Utils.bytesToHexNpe(response));
+                        }
+                    }
+                    if (isActivateOn) {
+                        //response = writeDisableUidMirrorNdef(nfcA);
+                        if (response == null) {
+                            writeToUiAppend(resultNfcWriting, "Disabling the UID mirror: FAILURE");
+                            return;
+                        } else {
+                            writeToUiAppend(resultNfcWriting, "Disabling the UID mirror: SUCCESS - code: " + Utils.bytesToHexNpe(response));
+                        }
+                    }
+
+
                 } finally {
                     try {
                         nfcA.close();
                     } catch (IOException e) {
-                        writeToUiAppend(responseField, "ERROR: IOException " + e.toString());
+                        writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
                         e.printStackTrace();
                     }
                 }
             }
         } catch (IOException e) {
-            writeToUiAppend(responseField, "ERROR: IOException " + e.toString());
+            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
             e.printStackTrace();
         }
 
             doVibrate(getActivity());
 
+    }
+
+    private byte[] getStatusUidMirrorNdef(NfcA nfcA) {
+        /**
+         * WARNING: this command is hardcoded to work with a NTAG216
+         * the bit for enabling or disabling the uid mirror is in pages 41/131/227 (0x29 / 0x83 / 0xE3)
+         * depending on the tag type
+         *
+         * byte 0 of this pages holds the MIRROR byte
+         * byte 2 of this pages holds the MIRROR_PAGE byte
+         *
+         * Mirror byte has these flags
+         * bits 6+7 define which mirror shall be used:
+         *   00b = no ASCII mirror
+         *   01b = Uid ASCII mirror
+         *   10b = NFC counter ASCII mirror
+         *   11b = Uid and NFC counter ASCII mirror
+         * bits 4+5 define the byte position within the page defined in MIRROR_PAGE byte
+         *
+         * MIRROR_PAGE byte defines the start of mirror.
+         *
+         * It is import that the end of mirror is within the user memory. These lengths apply:
+         * Uid mirror: 14 bytes
+         * NFC counter mirror: 6 bytes
+         * Uid + NFC counter mirror: 21 bytes (14 bytes for Uid and 1 byte separation + 6 bytes counter value
+         * Separator is x (0x78)
+         *
+         * This function writes the MIRROR_PAGE and MIRROR_BYTE to the place where the WRITE NDEF MESSAGE needs it
+         *
+         */
+
+        boolean isUidMirror, isCounterMirror, isMirrorBit4, isMirrorBit5;
+
+        writeToUiAppend(resultNfcWriting, "* Start enabling the Counter mirror *");
+        // read page 227 = Configuration page 0
+        byte[] readPageResponse = getTagDataResponse(nfcA, identifiedNtagConfigurationPage);
+        if (readPageResponse != null) {
+            // get byte 0 = MIRROR
+            byte mirrorByte = readPageResponse[0];
+            // get byte 2 = MIRROR_PAGE
+            byte mirrorPageByte = readPageResponse[2];
+            writeToUiAppend(resultNfcWriting, "mirrorPageByte: " + Utils.byteToHex(mirrorPageByte) + " (= " + (int) mirrorPageByte + " dec)");
+            writeToUiAppend(resultNfcWriting, "MIRROR content old: " + Utils.printByteBinary(mirrorByte));
+
+            isUidMirror = testBit(mirrorByte, 6);
+            isCounterMirror = testBit(mirrorByte, 7);
+            isMirrorBit4 = testBit(mirrorByte, 4);
+            isMirrorBit5 = testBit(mirrorByte, 5);
+            writeToUiAppend(resultNfcWriting, "isUidMirror: " + isUidMirror + " || isCounterMirror: " + isCounterMirror);
+            writeToUiAppend(resultNfcWriting, "isMirrorBit4: " + isMirrorBit4 + " || isMirrorBit5: " + isMirrorBit5);
+
+            byte mirrorByteNew;
+            // unsetting bit 7 = counter, we are doing UID mirroring only
+            mirrorByteNew = Utils.unsetBitInByte(mirrorByte, 7);
+            // setting bit 6
+            mirrorByteNew = Utils.setBitInByte(mirrorByteNew, 6);
+            // fix: start the mirror from byte 1 of the designated page, so bits are set as follows
+            mirrorByteNew = Utils.unsetBitInByte(mirrorByteNew, 5);
+            mirrorByteNew = Utils.setBitInByte(mirrorByteNew, 4);
+            writeToUiAppend(resultNfcWriting, "MIRROR content new: " + Utils.printByteBinary(mirrorByteNew));
+            // set the page where the mirror is starting, we use a fixed page here:
+            int setMirrorPage = 15; // 0x0F
+            byte mirrorPageNew = (byte) (setMirrorPage & 0x0ff);
+            // rebuild the page data
+            readPageResponse[0] = mirrorByteNew;
+            readPageResponse[2] = mirrorPageNew;
+            return readPageResponse;
+/*
+            // write the page back to the tag
+            byte[] writePageResponse = writeTagDataResponse(nfcA, 227, readPageResponse); // this is for NTAG216 only
+            writeToUiAppend(resultNfcWriting, "write page to tag: " + Utils.bytesToHexNpe(readPageResponse));
+            //byte[] writePageResponse = writeTagDataResponse(nfcA, 5, readPageResponse); // this is for NTAG216 only
+
+            if (writePageResponse != null) {
+                writeToUiAppend(resultNfcWriting, "SUCCESS: writing with response: " + Utils.bytesToHexNpe(writePageResponse));
+                return readPageResponse;
+            } else {
+                writeToUiAppend(resultNfcWriting, "FAILURE: no writing on the tag");
+            }
+
+             */
+        }
+        return null;
+    }
+
+    private byte[] writeEnableUidMirrorNdef(NfcA nfcA) {
+        /**
+         * The bit for enabling or disabling the uid mirror is in pages 41/131/227 (0x29 / 0x83 / 0xE3)
+         * depending on the tag type
+         *
+         * byte 0 of this pages holds the MIRROR byte
+         * byte 2 of this pages holds the MIRROR_PAGE byte
+         *
+         * Mirror byte has these flags
+         * bits 6+7 define which mirror shall be used:
+         *   00b = no ASCII mirror
+         *   01b = Uid ASCII mirror
+         *   10b = NFC counter ASCII mirror
+         *   11b = Uid and NFC counter ASCII mirror
+         * bits 4+5 define the byte position within the page defined in MIRROR_PAGE byte
+         *
+         * MIRROR_PAGE byte defines the start of mirror.
+         *
+         * It is import that the end of mirror is within the user memory. These lengths apply:
+         * Uid mirror: 14 bytes
+         * NFC counter mirror: 6 bytes
+         * Uid + NFC counter mirror: 21 bytes (14 bytes for Uid and 1 byte separation + 6 bytes counter value
+         * Separator is x (0x78)
+         *
+         * This function writes the MIRROR_PAGE and MIRROR_BYTE to the place where the WRITE NDEF MESSAGE needs it
+         *
+         */
+
+
+        writeToUiAppend(resultNfcWriting, "* Start enabling the Counter mirror *");
+        // read page 227 on NTAG226 = Configuration page 0
+        byte[] readPageResponse = getTagDataResponse(nfcA, identifiedNtagConfigurationPage);
+        if (readPageResponse != null) {
+            // get byte 0 = MIRROR
+            byte mirrorByte = readPageResponse[0];
+            // get byte 2 = MIRROR_PAGE
+            byte mirrorPageByte = readPageResponse[2];
+            writeToUiAppend(resultNfcWriting, "MIRROR content old: " + Utils.printByteBinary(mirrorByte));
+            byte mirrorByteNew;
+            // unsetting bit 7 = counter, we are doing UID mirroring only
+            mirrorByteNew = Utils.unsetBitInByte(mirrorByte, 7);
+            // setting bit 6
+            mirrorByteNew = Utils.setBitInByte(mirrorByteNew, 6);
+            // fix: start the mirror from byte 1 of the designated page, so bits are set as follows
+            mirrorByteNew = Utils.unsetBitInByte(mirrorByteNew, 5);
+            mirrorByteNew = Utils.setBitInByte(mirrorByteNew, 4);
+            writeToUiAppend(resultNfcWriting, "MIRROR content new: " + Utils.printByteBinary(mirrorByteNew));
+            // set the page where the mirror is starting, we use a fixed page here:
+            int setMirrorPage = 15; // 0x0F
+            byte mirrorPageNew = (byte) (setMirrorPage & 0x0ff);
+            // rebuild the page data
+            readPageResponse[0] = mirrorByteNew;
+            readPageResponse[2] = mirrorPageNew;
+            // write the page back to the tag
+            byte[] writePageResponse = writeTagDataResponse(nfcA, identifiedNtagConfigurationPage, readPageResponse); // this is for NTAG216 only
+            writeToUiAppend(resultNfcWriting, "write page to tag: " + Utils.bytesToHexNpe(readPageResponse));
+            //byte[] writePageResponse = writeTagDataResponse(nfcA, 5, readPageResponse); // this is for NTAG216 only
+            if (writePageResponse != null) {
+                writeToUiAppend(resultNfcWriting, "SUCCESS: writing with response: " + Utils.bytesToHexNpe(writePageResponse));
+                return readPageResponse;
+            } else {
+                writeToUiAppend(resultNfcWriting, "FAILURE: no writing on the tag");
+            }
+        }
+        return null;
+    }
+
+    private byte[] getTagDataResponse(NfcA nfcA, int page) {
+        byte[] response;
+        byte[] command = new byte[]{
+                (byte) 0x30,  // READ
+                (byte) (page & 0x0ff), // page 0
+        };
+        try {
+            response = nfcA.transceive(command); // response should be 16 bytes = 4 pages
+            if (response == null) {
+                // either communication to the tag was lost or a NACK was received
+                writeToUiAppend(resultNfcWriting, "Error on reading page " + page);
+                return null;
+            } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
+                // NACK response according to Digital Protocol/T2TOP
+                // Log and return
+                writeToUiAppend(resultNfcWriting, "Error (NACK) on reading page " + page);
+                return null;
+            } else {
+                // success: response contains ACK or actual data
+                writeToUiAppend(resultNfcWriting, "SUCCESS on reading page " + page + " response: " + Utils.bytesToHexNpe(response));
+                System.out.println("reading page " + page + ": " + Utils.bytesToHexNpe(response));
+            }
+        } catch (TagLostException e) {
+            // Log and return
+            writeToUiAppend(resultNfcWriting, "ERROR: Tag lost exception on reading");
+            return null;
+        } catch (IOException e) {
+            writeToUiAppend(resultNfcWriting, "ERROR: IOEexception: " + e);
+            e.printStackTrace();
+            return null;
+        }
+        return response;
+    }
+
+    private byte[] writeTagDataResponse(NfcA nfcA, int page, byte[] dataByte) {
+        byte[] response;
+        byte[] command = new byte[]{
+                (byte) 0xA2,  // WRITE
+                (byte) (page & 0x0ff),
+                dataByte[0],
+                dataByte[1],
+                dataByte[2],
+                dataByte[3]
+        };
+        try {
+            response = nfcA.transceive(command); // response should be 16 bytes = 4 pages
+            if (response == null) {
+                // either communication to the tag was lost or a NACK was received
+                writeToUiAppend(resultNfcWriting, "Error on writing page " + page);
+                return null;
+            } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
+                // NACK response according to Digital Protocol/T2TOP
+                // Log and return
+                writeToUiAppend(resultNfcWriting, "Error (NACK) on writing page " + page);
+                return null;
+            } else {
+                // success: response contains ACK or actual data
+                writeToUiAppend(resultNfcWriting, "SUCCESS on writing page " + page + " response: " + Utils.bytesToHexNpe(response));
+                System.out.println("response page " + page + ": " + Utils.bytesToHexNpe(response));
+                return response;
+            }
+        } catch (TagLostException e) {
+            // Log and return
+            writeToUiAppend(resultNfcWriting, "ERROR: Tag lost exception");
+            return null;
+        } catch (IOException e) {
+            writeToUiAppend(resultNfcWriting, "ERROR: IOEexception: " + e);
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void formatNdef(Tag tag) {
@@ -427,6 +476,19 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
         else {
             showMessage("Tag not formattable or already formatted to Ndef");
         }
+    }
+
+    private void writeToUiAppend(TextView textView, String message) {
+        getActivity().runOnUiThread(() -> {
+            String oldString = textView.getText().toString();
+            if (TextUtils.isEmpty(oldString)) {
+                textView.setText(message);
+            } else {
+                String newString = message + "\n" + oldString;
+                textView.setText(newString);
+                System.out.println(message);
+            }
+        });
     }
 
     private void showMessage(String message) {

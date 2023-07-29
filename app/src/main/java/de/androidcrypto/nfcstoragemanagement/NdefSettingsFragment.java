@@ -1,6 +1,7 @@
 package de.androidcrypto.nfcstoragemanagement;
 
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
+import static de.androidcrypto.nfcstoragemanagement.Utils.hexStringToByteArray;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
 import android.content.Intent;
@@ -51,22 +52,23 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
     private String mParam1;
     private String mParam2;
 
-    //com.google.android.material.textfield.TextInputLayout inputField1Decoration, inputField2Decoration, inputField3Decoration;
-    private com.google.android.material.textfield.TextInputEditText ndefBaseUrl, ndefUidName, ndefReadCounterName, ndefMacName, ndefResultNfcWriting;
-    private SwitchMaterial addTimestampToData;
+    private com.google.android.material.textfield.TextInputEditText ndefBaseUrl, ndefUidName, ndefMacName, ndefResultNfcWriting;
     private Button testNdefSettings;
     public static final int UID_LENGTH = 14; // hex encoding
-    public static final int READ_COUNTER_LENGTH = 12; // hex encoding
+    //public static final int READ_COUNTER_LENGTH = 12; // hex encoding
     public static final int MAC_LENGTH = 8; // hex encoding
-    public static final String UID_TEMPLATE = "00000000000000";
-    public static final String READ_COUNTER_TEMPLATE = "111111111111";
+    public static final String UID_HEADER = "?";
+    public static String UID_NAME = "";
+    public static final String UID_FOOTER = "=";
+    public static final String UID_TEMPLATE = "11111111111111";
+    //public static final String READ_COUNTER_TEMPLATE = "111111111111";
+    public static final String MAC_HEADER = "&";
+    public static String MAC_NAME = "";
+    public static final String MAC_FOOTER = "=";
     public static final String MAC_TEMPLATE = "22222222";
     private static String ndefTemplateString = "";
     private static final String NDEF_BASE_URL_TEMPLATE = "http://fluttercrypto.bplaced.net/apps/ntag/get_reg3.php";
     private static final int NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH = 137; // maximum length of an NDEF message on a NTAG213
-
-    com.google.android.material.textfield.TextInputLayout dataToSendLayout;
-    com.google.android.material.textfield.TextInputEditText dataToSend;
 
     private NfcAdapter mNfcAdapter;
 
@@ -114,7 +116,7 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
         ndefBaseUrl.setText(NDEF_BASE_URL_TEMPLATE);
         //inputField1Decoration = getView().findViewById(R.id.etMainInputline1Decoration);
         ndefUidName = getView().findViewById(R.id.etNdefSettingsUidName);
-        ndefReadCounterName = getView().findViewById(R.id.etNdefSettingsReadCounterName);
+        //ndefReadCounterName = getView().findViewById(R.id.etNdefSettingsReadCounterName);
         ndefMacName = getView().findViewById(R.id.etNdefSettingsMacName);
         ndefResultNfcWriting = getView().findViewById(R.id.etNdefSettingsResult);
         testNdefSettings = getView().findViewById(R.id.btnNdefSettingsTest);
@@ -135,21 +137,18 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
             public void onClick(View view) {
                 // test if the complete template string is correct
                 // we are going to build the template string
+                UID_NAME = ndefUidName.getText().toString();
+                MAC_NAME = ndefMacName.getText().toString();
                 StringBuilder sb = new StringBuilder();
                 sb.append(ndefBaseUrl.getText().toString());
-                sb.append("?");
-                sb.append(ndefUidName.getText().toString());
-                sb.append("=");
+                sb.append(UID_HEADER); // "?"
+                sb.append(UID_NAME);
+                sb.append(UID_FOOTER); // "="
                 sb.append(UID_TEMPLATE);
-                // todo check for switch readCounter
-                sb.append("&");
-                sb.append(ndefReadCounterName.getText().toString());
-                sb.append("=");
-                sb.append(READ_COUNTER_TEMPLATE);
                 // todo check for switch Mac
-                sb.append("&");
-                sb.append(ndefMacName.getText().toString());
-                sb.append("=");
+                sb.append(UID_HEADER); // "&"
+                sb.append(MAC_NAME);
+                sb.append(MAC_FOOTER); // "="
                 sb.append(MAC_TEMPLATE);
                 ndefTemplateString = sb.toString();
                 int ndefTemplateStringLength = ndefTemplateString.length();

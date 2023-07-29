@@ -10,6 +10,7 @@ public class NfcIdentifyNtag {
     private static String identifiedNtagType = ""; // NTAG213, NTAG215 or NTAG216
     private static int identifiedNtagPages = 0; // NTAG 213 = 36, 215 = 126, 216 = 222 pages
     private static int identifiedNtagMemoryBytes = 0; // NTAG 213 = 144, 215 = 504, 216 = 888 bytes
+    private static int identifiedNtagConfigurationPage = 0; // NTAG 213 = 41, 215 = 131, 216 = 227 // this is the first configuration page
     private static byte[] identifiedNtagId = new byte[0];
 
     // data show here are from NXP NTAG21x data sheet
@@ -72,18 +73,21 @@ public class NfcIdentifyNtag {
                 returnCode = "213";
                 identifiedNtagType = "NTAG213";
                 identifiedNtagPages = 36;
+                identifiedNtagConfigurationPage = 41;
                 identifiedNtagMemoryBytes = 144;
             }
             if (Arrays.equals(response, ntag215VersionData)) {
                 returnCode = "215";
                 identifiedNtagType = "NTAG215";
                 identifiedNtagPages = 126;
+                identifiedNtagConfigurationPage = 131;
                 identifiedNtagMemoryBytes = 504;
             }
             if (Arrays.equals(response, ntag216VersionData)) {
                 returnCode = "216";
                 identifiedNtagType = "NTAG216";
                 identifiedNtagPages = 222;
+                identifiedNtagConfigurationPage = 227;
                 identifiedNtagMemoryBytes = 888;
             }
         } catch (IOException e) {
@@ -100,6 +104,10 @@ public class NfcIdentifyNtag {
         return identifiedNtagPages;
     }
 
+    public static int getIdentifiedNtagConfigurationPage() {
+        return identifiedNtagConfigurationPage;
+    }
+
     public static int getIdentifiedNtagMemoryBytes() { return identifiedNtagMemoryBytes; }
 
     public static byte[] getIdentifiedNtagId() { return identifiedNtagId; }
@@ -107,6 +115,7 @@ public class NfcIdentifyNtag {
     public static void clearInternalData() {
         identifiedNtagType = "";
         identifiedNtagPages = 0;
+        identifiedNtagConfigurationPage = 0;
         identifiedNtagMemoryBytes = 0;
         identifiedNtagId = new byte[0];
     }
