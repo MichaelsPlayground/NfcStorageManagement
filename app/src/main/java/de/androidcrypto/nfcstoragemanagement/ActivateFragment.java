@@ -3,6 +3,7 @@ package de.androidcrypto.nfcstoragemanagement;
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.nfc.FormatException;
@@ -13,7 +14,11 @@ import android.nfc.Tag;
 import android.nfc.TagLostException;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
+import android.nfc.tech.NfcA;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,6 +26,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -50,12 +57,16 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
     com.google.android.material.textfield.TextInputLayout inputField1Decoration, inputField2Decoration, inputField3Decoration;
     com.google.android.material.textfield.TextInputEditText typeDescription, inputField1, inputField2, inputField3, resultNfcWriting;
     SwitchMaterial addTimestampToData;
+
+    private Button runActivateAction;
+
     AutoCompleteTextView autoCompleteTextView;
     com.google.android.material.textfield.TextInputLayout dataToSendLayout;
     com.google.android.material.textfield.TextInputEditText dataToSend;
     //private final String DEFAULT_URL = "https://www.google.de/maps/@34.7967917,-111.765671,3a,66.6y,15.7h,102.19t/data=!3m6!1e1!3m4!1sFV61wUEyLNwFi6zHHaKMcg!2e0!7i16384!8i8192";
     private final String DEFAULT_URL = "https://github.com/AndroidCrypto?tab=repositories";
     private NfcAdapter mNfcAdapter;
+    private NfcA nfcA;
 
     public ActivateFragment() {
         // Required empty public constructor
@@ -100,6 +111,9 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+
+        runActivateAction = getView().findViewById(R.id.btnActivateStatus);
+
 
         typeDescription = getView().findViewById(R.id.etMainTypeDescription);
         inputField1 = getView().findViewById(R.id.etMainInputline1);
@@ -334,150 +348,61 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
 // Read and or write to Tag here to the appropriate Tag Technology type class
         // in this example the card should be an Ndef Technology Type
 
-        Ndef mNdef = Ndef.get(tag);
+        nfcA = NfcA.get(tag);
+        try {
+            nfcA = NfcA.get(tag);
 
-        // Check that it is an Ndef capable card
-        if (mNdef != null) {
-
-            NdefMessage ndefMessage;
-            NdefRecord ndefRecord1;
-            // nfc ndef writing depends on the type
-            String choiceString = autoCompleteTextView.getText().toString();
-            String inputData1 = inputField1.getText().toString();
-            boolean addTimestamp = addTimestampToData.isChecked();
-            switch (choiceString) {
-                case "Text": {
-                    String data = inputData1;
-                    if (addTimestamp) data = data + " " + Utils.getTimestamp();
-                    ndefRecord1 = NdefRecord.createTextRecord("en", data);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "URI": {
-                    String data = inputData1;
-                    ndefRecord1 = NdefRecord.createUri(data);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Telephone number": {
-                    String data = inputData1;
-                    String completeData = "tel:" + data;
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Email": {
-                    String data1 = inputData1;
-                    String data2 = inputField2.getText().toString();
-                    String data3 = inputField3.getText().toString();
-                    String completeData = "mailto:" + Uri.encode(data1) + "?subject=" +
-                            Uri.encode(data2);
-                    if (addTimestamp) completeData = completeData + Uri.encode(" " + Utils.getTimestamp());
-                    completeData = completeData + "&body=" + Uri.encode(data3);
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "StreetView": {
-                    String data = inputData1;
-                    String completeData = "google.streetview:cbll=" + data;
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Coordinate": {
-                    String data = inputData1;
-                    String completeData = "geo:" + data;
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Coordinate userinfo": {
-                    String data1 = inputData1;
-                    String data2 = Uri.encode(inputField2.getText().toString());
-                    String completeData = "geo:0,0?q=" + data1 + "(" + data2 + ")";
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Address": {
-                    String data1 = Uri.encode(inputData1);
-                    String data2 = Uri.encode(inputField2.getText().toString());
-                    String data3 = Uri.encode(inputField3.getText().toString());
-                    String completeData = "geo:0,0?q=" + data1 + "+" + data2 + "+" + data3;
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Google navigation": {
-                    String data1 = Uri.encode(inputData1);
-                    String data2 = Uri.encode(inputField2.getText().toString());
-                    String data3 = Uri.encode(inputField3.getText().toString());
-                    String completeData = "google.navigation:q=" + data1 + "+" + data2 + "+" + data3;
-                    ndefRecord1 = NdefRecord.createUri(completeData);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-                case "Application": {
-                    String data = inputData1;
-                    ndefRecord1 = NdefRecord.createApplicationRecord(data);
-                    ndefMessage = new NdefMessage(ndefRecord1);
-                    break;
-                }
-
-                default:
-                    throw new IllegalStateException("Unexpected value: " + choiceString);
-            }
-
-            // the tag is written here
-            try {
-                mNdef.connect();
-
-                // check that the tag is writable
-                if (!mNdef.isWritable()) {
-                    showMessage("NFC tag is not writable");
+            if (nfcA != null) {
+                showMessage("NFC tag is Nfca compatible");
+                nfcA.connect();
+                // check that the tag is a NTAG213/215/216 manufactured by NXP - stop if not
+                String ntagVersion = NfcIdentifyNtag.checkNtagType(nfcA, tag.getId());
+                if (!ntagVersion.equals("216")) {
+                    showMessage("NFC tag is NOT of type NXP NTAG216");
                     return;
                 }
 
-                // check that the tag has sufficient memory to write the ndef message
-                int ndefMaxSize = mNdef.getMaxSize();
-                int messageSize = ndefMessage.toByteArray().length;
-                if (messageSize > ndefMaxSize) {
-                    showMessage("Message is too large to write on NFC tag");
-                    return;
-                }
+                int nfcaMaxTranceiveLength = nfcA.getMaxTransceiveLength(); // important for the readFast command
+                int ntagPages = NfcIdentifyNtag.getIdentifiedNtagPages();
+                int ntagMemoryBytes = NfcIdentifyNtag.getIdentifiedNtagMemoryBytes();
+                String tagIdString = Utils.getDec(tag.getId());
+                String nfcaContent = "raw data of " + NfcIdentifyNtag.getIdentifiedNtagType() + "\n" +
+                        "number of pages: " + ntagPages +
+                        " total memory: " + ntagMemoryBytes +
+                        " bytes\n" +
+                        "tag ID: " + Utils.bytesToHexNpe(NfcIdentifyNtag.getIdentifiedNtagId()) + "\n" +
+                        "tag ID: " + tagIdString + "\n";
+                nfcaContent = nfcaContent + "maxTranceiveLength: " + nfcaMaxTranceiveLength + " bytes\n";
+                // read the complete memory depending on ntag type
+                byte[] ntagMemory = new byte[ntagMemoryBytes];
+                // read the content of the tag in several runs
+                byte[] response = new byte[0];
 
-                mNdef.writeNdefMessage(ndefMessage);
-                // Success if got to here
-                showMessage("write to NFC success, total message size is " + messageSize);
-            } catch (FormatException e) {
-                showMessage("FormatException: " + e.getMessage());
-                // if the NDEF Message to write is malformed
-            } catch (TagLostException e) {
-                showMessage("TagLostException: " + e.getMessage());
-                // Tag went out of range before operations were complete
-            } catch (IOException e) {
-                // if there is an I/O failure, or the operation is cancelled
-                showMessage("IOException: " + e.getMessage() + " I'm trying to format the tag... please try again");
-                // try to format the tag
-                formatNdef(tag);
-            } finally {
-                // Be nice and try and close the tag to
-                // Disable I/O operations to the tag from this TagTechnology object, and release resources.
                 try {
-                    mNdef.close();
-                } catch (IOException e) {
-                    // if there is an I/O failure, or the operation is cancelled
-                    showMessage("IOException on close: " + e.getMessage());
+
+                    response = writeEnableUidCounterMirrorNdef(nfcA);
+                    if (response == null) {
+                        writeToUiAppend(responseField, "Enabling the Uid + counter mirror: FAILURE");
+                        return;
+                    } else {
+                        writeToUiAppend(responseField, "Enabling the Uid + counter mirror: SUCCESS - code: " + Utils.bytesToHex(response));
+                    }
+                } finally {
+                    try {
+                        nfcA.close();
+                    } catch (IOException e) {
+                        writeToUiAppend(responseField, "ERROR: IOException " + e.toString());
+                        e.printStackTrace();
+                    }
                 }
             }
-            doVibrate(getActivity());
-            playSinglePing(getContext());
-        } else {
-            showMessage("mNdef is null, not an NDEF formatted tag, try to format the tag");
-            // trying to format the tag
-            formatNdef(tag);
+        } catch (IOException e) {
+            writeToUiAppend(responseField, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
         }
+
+            doVibrate(getActivity());
+
     }
 
     private void formatNdef(Tag tag) {
