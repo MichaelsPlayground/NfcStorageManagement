@@ -167,101 +167,71 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                 boolean isActivateOn = rbActivateOn.isChecked();
                 boolean isActivateOff = rbActivateOff.isChecked();
 
-                try {
-                    if (isGetActivateStatus) {
-                        response = getStatusUidMirrorNdef(nfcA);
+                if (isGetActivateStatus) {
+                    response = getStatusUidMirrorNdef(nfcA);
 
-                        // read the complete ndef message and find the placeholder
-                        // as I'm limiting the maximum ndef message we can read all data in one run
-                        // build the matching strings for ud and mac
+                    // read the complete ndef message and find the placeholder
+                    // as I'm limiting the maximum ndef message we can read all data in one run
+                    // build the matching strings for ud and mac
 
-                        // read the placeholder names from the shared preferences
-                        String UID_NAME;
-                        String MAC_NAME;
-                        try {
-                            SharedPreferences prefs = requireContext().getSharedPreferences(NdefSettingsFragment.PREFS_NAME, MODE_PRIVATE);
-                            UID_NAME = prefs.getString(NdefSettingsFragment.PREFS_UID_NAME, null);
-                            MAC_NAME = prefs.getString(NdefSettingsFragment.PREFS_MAC_NAME, null);
-                            if ((UID_NAME == null) || (UID_NAME.length() < 1) || (MAC_NAME == null) || (MAC_NAME.length() < 1)) {
-                                writeToUiAppend(resultNfcWriting, "Please setup the NDEF settings, aborted");
-                                return;
-                            }
-                        } catch (NullPointerException e) {
+                    // read the placeholder names from the shared preferences
+                    String UID_NAME;
+                    String MAC_NAME;
+                    try {
+                        SharedPreferences prefs = requireContext().getSharedPreferences(NdefSettingsFragment.PREFS_NAME, MODE_PRIVATE);
+                        UID_NAME = prefs.getString(NdefSettingsFragment.PREFS_UID_NAME, null);
+                        MAC_NAME = prefs.getString(NdefSettingsFragment.PREFS_MAC_NAME, null);
+                        if ((UID_NAME == null) || (UID_NAME.length() < 1) || (MAC_NAME == null) || (MAC_NAME.length() < 1)) {
                             writeToUiAppend(resultNfcWriting, "Please setup the NDEF settings, aborted");
                             return;
                         }
-                        StringBuilder sb = new StringBuilder();
-                        // uid
-                        sb.append(NdefSettingsFragment.UID_HEADER);
-                        sb.append(UID_NAME);
-                        sb.append(NdefSettingsFragment.UID_FOOTER);
-                        String uidMatchString = sb.toString();
-                        writeToUiAppend(resultNfcWriting, "uidMatchString: " + uidMatchString);
-                        // mac
-                        StringBuilder sb2 = new StringBuilder();
-                        sb2.append(NdefSettingsFragment.MAC_HEADER);
-                        sb2.append(MAC_NAME);
-                        sb2.append(NdefSettingsFragment.MAC_FOOTER);
-                        String macMatchString = sb2.toString();
-                        writeToUiAppend(resultNfcWriting, "macMatchString: " + macMatchString);
+                    } catch (NullPointerException e) {
+                        writeToUiAppend(resultNfcWriting, "Please setup the NDEF settings, aborted");
+                        return;
+                    }
+                    StringBuilder sb = new StringBuilder();
+                    // uid
+                    sb.append(NdefSettingsFragment.UID_HEADER);
+                    sb.append(UID_NAME);
+                    sb.append(NdefSettingsFragment.UID_FOOTER);
+                    String uidMatchString = sb.toString();
+                    writeToUiAppend(resultNfcWriting, "uidMatchString: " + uidMatchString);
+                    // mac
+                    StringBuilder sb2 = new StringBuilder();
+                    sb2.append(NdefSettingsFragment.MAC_HEADER);
+                    sb2.append(MAC_NAME);
+                    sb2.append(NdefSettingsFragment.MAC_FOOTER);
+                    String macMatchString = sb2.toString();
+                    writeToUiAppend(resultNfcWriting, "macMatchString: " + macMatchString);
 
-                        // read the content of the the tag to find the match strings
-                        int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
-                        boolean readOneRound = false;
+                    // read the content of the the tag to find the match strings
 
-                        int nfcaMaxTranceive4ByteTrunc = nfcaMaxTranceiveLength / 4; // 63
-                        int nfcaMaxTranceive4ByteLength = nfcaMaxTranceive4ByteTrunc * 4; // 252 bytes
-                        int nfcaNrOfFullReadings = maximumBytesToRead / nfcaMaxTranceive4ByteLength;
-                        int nfcaTotalFullReadingBytes = nfcaNrOfFullReadings * nfcaMaxTranceive4ByteLength; // 3 * 252 = 756
-                        int nfcaMaxTranceiveModuloLength = maximumBytesToRead - nfcaTotalFullReadingBytes; // 888 bytes - 756 bytes = 132 bytes
-                        nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteTrunc: " + nfcaMaxTranceive4ByteTrunc + "\n";
-                        nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteLength: " + nfcaMaxTranceive4ByteLength + "\n";
-                        nfcaContent = nfcaContent + "nfcaNrOfFullReadings: " + nfcaNrOfFullReadings + "\n";
-                        nfcaContent = nfcaContent + "nfcaTotalFullReadingBytes: " + nfcaTotalFullReadingBytes + "\n";
-                        nfcaContent = nfcaContent + "nfcaMaxTranceiveModuloLength: " + nfcaMaxTranceiveModuloLength + "\n";
+                    /*
+                    int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
+                    boolean readOneRound = false;
 
-                        if (maximumBytesToRead <= nfcaMaxTranceiveLength) readOneRound = true;
-                        // first round
-                        for (int i = 0; i < nfcaNrOfFullReadings; i++) {
-                            //nfcaContent = nfcaContent + "starting round: " + i + "\n";
-                            System.out.println("starting round: " + i);
-                            byte[] commandF = new byte[]{
-                                    (byte) 0x3A,  // FAST_READ
-                                    (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * i)) & 0x0ff), // page 4 is the first user memory page
-                                    (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * (i + 1)) - 1) & 0x0ff)
-                            };
-                            //nfcaContent = nfcaContent + "i: " + i + " commandF: " + bytesToHex(commandF) + "\n";
-                            response = nfcA.transceive(commandF);
-                            if (response == null) {
-                                // either communication to the tag was lost or a NACK was received
-                                // Log and return
-                                nfcaContent = nfcaContent + "ERROR: null response";
-                                String finalNfcaText = nfcaContent;
-                                writeToUiAppend(resultNfcWriting, finalNfcaText);
-                                System.out.println(finalNfcaText);
-                                return;
-                            } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
-                                // NACK response according to Digital Protocol/T2TOP
-                                // Log and return
-                                nfcaContent = nfcaContent + "ERROR: NACK response: " + Utils.bytesToHexNpe(response);
-                                String finalNfcaText = nfcaContent;
-                                writeToUiAppend(resultNfcWriting, finalNfcaText);
-                                System.out.println(finalNfcaText);
-                                return;
-                            } else {
-                                // success: response contains ACK or actual data
-                                System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * i), nfcaMaxTranceive4ByteLength);
-                            }
-                        } // for
-                        // now we read the nfcaMaxTranceiveModuloLength bytes, for a NTAG216 = 132 bytes
-                        //nfcaContent = nfcaContent + "starting last round: " + "\n";
-                        //System.out.println("starting last round: ");
+                    int nfcaMaxTranceive4ByteTrunc = nfcaMaxTranceiveLength / 4; // 63
+                    int nfcaMaxTranceive4ByteLength = nfcaMaxTranceive4ByteTrunc * 4; // 252 bytes
+                    int nfcaNrOfFullReadings = maximumBytesToRead / nfcaMaxTranceive4ByteLength;
+                    int nfcaTotalFullReadingBytes = nfcaNrOfFullReadings * nfcaMaxTranceive4ByteLength; // 3 * 252 = 756
+                    int nfcaMaxTranceiveModuloLength = maximumBytesToRead - nfcaTotalFullReadingBytes; // 888 bytes - 756 bytes = 132 bytes
+                    nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteTrunc: " + nfcaMaxTranceive4ByteTrunc + "\n";
+                    nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteLength: " + nfcaMaxTranceive4ByteLength + "\n";
+                    nfcaContent = nfcaContent + "nfcaNrOfFullReadings: " + nfcaNrOfFullReadings + "\n";
+                    nfcaContent = nfcaContent + "nfcaTotalFullReadingBytes: " + nfcaTotalFullReadingBytes + "\n";
+                    nfcaContent = nfcaContent + "nfcaMaxTranceiveModuloLength: " + nfcaMaxTranceiveModuloLength + "\n";
+
+                    if (maximumBytesToRead <= nfcaMaxTranceiveLength) readOneRound = true;
+                    // first round
+                    for (int i = 0; i < nfcaNrOfFullReadings; i++) {
+                        //nfcaContent = nfcaContent + "starting round: " + i + "\n";
+                        System.out.println("starting round: " + i);
                         byte[] commandF = new byte[]{
                                 (byte) 0x3A,  // FAST_READ
-                                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings)) & 0x0ff), // page 4 is the first user memory page
-                                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings) + (nfcaMaxTranceiveModuloLength / 4) & 0x0ff))
+                                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * i)) & 0x0ff), // page 4 is the first user memory page
+                                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * (i + 1)) - 1) & 0x0ff)
                         };
-                        //nfcaContent = nfcaContent + "last: " + " commandF: " + bytesToHex(commandF) + "\n";
+                        //nfcaContent = nfcaContent + "i: " + i + " commandF: " + bytesToHex(commandF) + "\n";
                         response = nfcA.transceive(commandF);
                         if (response == null) {
                             // either communication to the tag was lost or a NACK was received
@@ -276,72 +246,98 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                             // Log and return
                             nfcaContent = nfcaContent + "ERROR: NACK response: " + Utils.bytesToHexNpe(response);
                             String finalNfcaText = nfcaContent;
-                            //writeToUiAppend(resultNfcWriting, finalNfcaText);
+                            writeToUiAppend(resultNfcWriting, finalNfcaText);
                             System.out.println(finalNfcaText);
                             return;
                         } else {
                             // success: response contains ACK or actual data
-                            System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * nfcaNrOfFullReadings), nfcaMaxTranceiveModuloLength);
+                            System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * i), nfcaMaxTranceive4ByteLength);
                         }
-                        //writeToUiAppend(resultNfcWriting, "content: " + Utils.bytesToHexNpe(ntagMemory));
-                        if ((ntagMemory == null) || (ntagMemory.length < 10)) {
-                            writeToUiAppend(resultNfcWriting, "Error - could not read enough data from tag, aborted");
-                            return;
-                        }
-                        String ntagDataString = new String(ntagMemory, StandardCharsets.UTF_8);
-                        writeToUiAppend(resultNfcWriting, "ntagDataString:\n" + ntagDataString);
-
-                        // search for match strings
-                        int positionUidMatch = ntagDataString.indexOf(uidMatchString);
-                        int positionMacMatch = ntagDataString.indexOf(macMatchString);
-                        // both values need to be > 1
-                        writeToUiAppend(resultNfcWriting, "positionUidMatch: " + positionUidMatch + " || positionMacMatch: " + positionMacMatch);
-                        if ((positionUidMatch < 1) || (positionMacMatch < 1)) {
-                            writeToUiAppend(resultNfcWriting, "Error - insufficient positions found, aborted");;
-                        } else {
-                            writeToUiAppend(resultNfcWriting, "positive match positions, now checking enabled mirroring");
-                        }
-
-                        // now we are reading the configuration
-                        int mirrorPosition = checkUidMirrorStatus(nfcA, identifiedNtagConfigurationPage);
-                        writeToUiAppend(resultNfcWriting, "position of UID mirror: " + mirrorPosition);
-
-
-                        if (response == null) {
-                            writeToUiAppend(resultNfcWriting, "status of the UID mirror: FAILURE");
-                            return;
-                        } else {
-                            writeToUiAppend(resultNfcWriting, "status of the UID mirror: SUCCESS - code: " + Utils.bytesToHexNpe(response));
-                        }
-
+                    } // for
+                    // now we read the nfcaMaxTranceiveModuloLength bytes, for a NTAG216 = 132 bytes
+                    //nfcaContent = nfcaContent + "starting last round: " + "\n";
+                    //System.out.println("starting last round: ");
+                    byte[] commandF = new byte[]{
+                            (byte) 0x3A,  // FAST_READ
+                            (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings)) & 0x0ff), // page 4 is the first user memory page
+                            (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings) + (nfcaMaxTranceiveModuloLength / 4) & 0x0ff))
+                    };
+                    //nfcaContent = nfcaContent + "last: " + " commandF: " + bytesToHex(commandF) + "\n";
+                    response = nfcA.transceive(commandF);
+                    if (response == null) {
+                        // either communication to the tag was lost or a NACK was received
+                        // Log and return
+                        nfcaContent = nfcaContent + "ERROR: null response";
+                        String finalNfcaText = nfcaContent;
+                        writeToUiAppend(resultNfcWriting, finalNfcaText);
+                        System.out.println(finalNfcaText);
+                        return;
+                    } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
+                        // NACK response according to Digital Protocol/T2TOP
+                        // Log and return
+                        nfcaContent = nfcaContent + "ERROR: NACK response: " + Utils.bytesToHexNpe(response);
+                        String finalNfcaText = nfcaContent;
+                        //writeToUiAppend(resultNfcWriting, finalNfcaText);
+                        System.out.println(finalNfcaText);
+                        return;
+                    } else {
+                        // success: response contains ACK or actual data
+                        System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * nfcaNrOfFullReadings), nfcaMaxTranceiveModuloLength);
                     }
-                    if (isActivateOn) {
-                        boolean resultEnable = enableUidMirror(nfcA, identifiedNtagConfigurationPage, 55);
-                        if (!resultEnable) {
-                            writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: FAILURE");
-                            return;
-                        } else {
-                            writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: SUCCESS");
-                        }
+                    //writeToUiAppend(resultNfcWriting, "content: " + Utils.bytesToHexNpe(ntagMemory));
+                    */
+
+                    int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
+                    ntagMemory = readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTranceiveLength);
+                    if ((ntagMemory == null) || (ntagMemory.length < 10)) {
+                        writeToUiAppend(resultNfcWriting, "Error - could not read enough data from tag, aborted");
+                        return;
                     }
-                    if (isActivateOff) {
-                        boolean resultEnable = disableAllMirror(nfcA, identifiedNtagConfigurationPage);
-                        if (!resultEnable) {
-                            writeToUiAppend(resultNfcWriting, "Disabling ALL mirror: FAILURE");
-                            return;
-                        } else {
-                            writeToUiAppend(resultNfcWriting, "Disabling ALL mirror: SUCCESS");
-                        }
+                    String ntagDataString = new String(ntagMemory, StandardCharsets.UTF_8);
+                    writeToUiAppend(resultNfcWriting, "ntagDataString:\n" + ntagDataString);
+
+                    // search for match strings
+                    int positionUidMatch = ntagDataString.indexOf(uidMatchString);
+                    int positionMacMatch = ntagDataString.indexOf(macMatchString);
+                    // both values need to be > 1
+                    writeToUiAppend(resultNfcWriting, "positionUidMatch: " + positionUidMatch + " || positionMacMatch: " + positionMacMatch);
+                    if ((positionUidMatch < 1) || (positionMacMatch < 1)) {
+                        writeToUiAppend(resultNfcWriting, "Error - insufficient positions found, aborted");;
+                    } else {
+                        writeToUiAppend(resultNfcWriting, "positive match positions, now checking enabled mirroring");
                     }
-                } catch (TagLostException e) {
-                    // Log and return
-                    writeToUiAppend(resultNfcWriting, "ERROR: Tag lost exception: " + e.getMessage());
-                    return;
-                } catch (IOException e) {
-                    writeToUiAppend(resultNfcWriting, "ERROR: IOException: " + e.getMessage());
-                    return;
+
+                    // now we are reading the configuration
+                    int mirrorPosition = checkUidMirrorStatus(nfcA, identifiedNtagConfigurationPage);
+                    writeToUiAppend(resultNfcWriting, "position of UID mirror: " + mirrorPosition);
+
+
+                    if (response == null) {
+                        writeToUiAppend(resultNfcWriting, "status of the UID mirror: FAILURE");
+                        return;
+                    } else {
+                        writeToUiAppend(resultNfcWriting, "status of the UID mirror: SUCCESS - code: " + Utils.bytesToHexNpe(response));
+                    }
+
                 }
-
+                if (isActivateOn) {
+                    boolean resultEnable = enableUidMirror(nfcA, identifiedNtagConfigurationPage, 55);
+                    if (!resultEnable) {
+                        writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: FAILURE");
+                        return;
+                    } else {
+                        writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: SUCCESS");
+                    }
+                }
+                if (isActivateOff) {
+                    boolean resultEnable = disableAllMirror(nfcA, identifiedNtagConfigurationPage);
+                    if (!resultEnable) {
+                        writeToUiAppend(resultNfcWriting, "Disabling ALL mirror: FAILURE");
+                        return;
+                    } else {
+                        writeToUiAppend(resultNfcWriting, "Disabling ALL mirror: SUCCESS");
+                    }
+                }
 
 
             }
@@ -367,14 +363,96 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
      * The content is used to find matching strings with UID and/or MAC
      * Note: if any mirror is enabled on the tag the returned content is the VIRTUAL content including
      * the mirror content, not the REAL content written in pages !
+     *
      * @param nfcA
-     * @param numberOfBytes
+     * @param numberOfBytesToRead
      * @return
      */
-    private byte[] readNdefContent(NfcA nfcA, int numberOfBytes) {
+    private byte[] readNdefContent(NfcA nfcA, int numberOfBytesToRead, int nfcaMaxTranceiveLength ) {
+        int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
+        int nfcaMaxTranceive4ByteTrunc = nfcaMaxTranceiveLength / 4; // 63
+        int nfcaMaxTranceive4ByteLength = nfcaMaxTranceive4ByteTrunc * 4; // 252 bytes
+        int nfcaNrOfFullReadings = maximumBytesToRead / nfcaMaxTranceive4ByteLength;
+        int nfcaTotalFullReadingBytes = nfcaNrOfFullReadings * nfcaMaxTranceive4ByteLength; // 3 * 252 = 756
+        int nfcaMaxTranceiveModuloLength = maximumBytesToRead - nfcaTotalFullReadingBytes; // 888 bytes - 756 bytes = 132 bytes
+        String nfcaContent = "";
+        nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteTrunc: " + nfcaMaxTranceive4ByteTrunc + "\n";
+        nfcaContent = nfcaContent + "nfcaMaxTranceive4ByteLength: " + nfcaMaxTranceive4ByteLength + "\n";
+        nfcaContent = nfcaContent + "nfcaNrOfFullReadings: " + nfcaNrOfFullReadings + "\n";
+        nfcaContent = nfcaContent + "nfcaTotalFullReadingBytes: " + nfcaTotalFullReadingBytes + "\n";
+        nfcaContent = nfcaContent + "nfcaMaxTranceiveModuloLength: " + nfcaMaxTranceiveModuloLength + "\n";
 
-
-        return null;
+        byte[] response;
+        byte[] ntagMemory = new byte[numberOfBytesToRead];
+        try {
+        // first round
+        for (int i = 0; i < nfcaNrOfFullReadings; i++) {
+            //nfcaContent = nfcaContent + "starting round: " + i + "\n";
+            System.out.println("starting round: " + i);
+            byte[] commandF = new byte[]{
+                    (byte) 0x3A,  // FAST_READ
+                    (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * i)) & 0x0ff), // page 4 is the first user memory page
+                    (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * (i + 1)) - 1) & 0x0ff)
+            };
+            //nfcaContent = nfcaContent + "i: " + i + " commandF: " + bytesToHex(commandF) + "\n";
+            response = nfcA.transceive(commandF);
+            if (response == null) {
+                // either communication to the tag was lost or a NACK was received
+                // Log and return
+                nfcaContent = nfcaContent + "ERROR: null response";
+                String finalNfcaText = nfcaContent;
+                writeToUiAppend(resultNfcWriting, finalNfcaText);
+                System.out.println(finalNfcaText);
+                return null;
+            } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
+                // NACK response according to Digital Protocol/T2TOP
+                // Log and return
+                nfcaContent = nfcaContent + "ERROR: NACK response: " + Utils.bytesToHexNpe(response);
+                String finalNfcaText = nfcaContent;
+                writeToUiAppend(resultNfcWriting, finalNfcaText);
+                System.out.println(finalNfcaText);
+                return null;
+            } else {
+                // success: response contains ACK or actual data
+                System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * i), nfcaMaxTranceive4ByteLength);
+            }
+        } // for
+        // now we read the nfcaMaxTranceiveModuloLength bytes, for a NTAG216 = 132 bytes
+        //nfcaContent = nfcaContent + "starting last round: " + "\n";
+        //System.out.println("starting last round: ");
+        byte[] commandF = new byte[]{
+                (byte) 0x3A,  // FAST_READ
+                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings)) & 0x0ff), // page 4 is the first user memory page
+                (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings) + (nfcaMaxTranceiveModuloLength / 4) & 0x0ff))
+        };
+        //nfcaContent = nfcaContent + "last: " + " commandF: " + bytesToHex(commandF) + "\n";
+        response = nfcA.transceive(commandF);
+        if (response == null) {
+            // either communication to the tag was lost or a NACK was received
+            // Log and return
+            nfcaContent = nfcaContent + "ERROR: null response";
+            String finalNfcaText = nfcaContent;
+            writeToUiAppend(resultNfcWriting, finalNfcaText);
+            System.out.println(finalNfcaText);
+            return null;
+        } else if ((response.length == 1) && ((response[0] & 0x00A) != 0x00A)) {
+            // NACK response according to Digital Protocol/T2TOP
+            // Log and return
+            nfcaContent = nfcaContent + "ERROR: NACK response: " + Utils.bytesToHexNpe(response);
+            String finalNfcaText = nfcaContent;
+            //writeToUiAppend(resultNfcWriting, finalNfcaText);
+            System.out.println(finalNfcaText);
+            return null;
+        } else {
+            // success: response contains ACK or actual data
+            System.arraycopy(response, 0, ntagMemory, (nfcaMaxTranceive4ByteLength * nfcaNrOfFullReadings), nfcaMaxTranceiveModuloLength);
+        }
+        } catch (IOException e) {
+            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
+            return null;
+        }
+        return ntagMemory;
     }
 
     /**
