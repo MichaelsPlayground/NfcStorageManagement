@@ -1,10 +1,12 @@
 package de.androidcrypto.nfcstoragemanagement;
 
+import static android.content.Context.MODE_PRIVATE;
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.hexStringToByteArray;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
@@ -69,6 +71,9 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
     private static String ndefTemplateString = "";
     private static final String NDEF_BASE_URL_TEMPLATE = "http://fluttercrypto.bplaced.net/apps/ntag/get_reg3.php";
     private static final int NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH = 137; // maximum length of an NDEF message on a NTAG213
+    public static final String PREFS_NAME = "prefs";
+    public static final String PREFS_UID_NAME = "uid";
+    public static final String PREFS_MAC_NAME = "mac";
 
     private NfcAdapter mNfcAdapter;
 
@@ -171,6 +176,12 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
                     ndefTemplateString = "";
                     return;
                 }
+                // save the settings to preferences
+                SharedPreferences.Editor editor = getContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+                editor.putString(PREFS_UID_NAME, UID_NAME);
+                editor.apply();
+                editor.putString(PREFS_MAC_NAME, MAC_NAME);
+                editor.apply();
             }
         });
     }

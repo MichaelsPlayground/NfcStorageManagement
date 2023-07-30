@@ -1,11 +1,13 @@
 package de.androidcrypto.nfcstoragemanagement;
 
+import static android.content.Context.MODE_PRIVATE;
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 import static de.androidcrypto.nfcstoragemanagement.Utils.testBit;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
@@ -22,6 +24,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +50,8 @@ import java.io.IOException;
  * create an instance of this fragment.
  */
 public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallback {
+
+    private static final String TAG = ActivateFragment.class.getName();
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -141,6 +146,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                 }
 
                 int nfcaMaxTranceiveLength = nfcA.getMaxTransceiveLength(); // important for the readFast command
+                Log.d(TAG, "nfcaMaxTranceiveLength: " + nfcaMaxTranceiveLength);
                 int ntagPages = NfcIdentifyNtag.getIdentifiedNtagPages();
                 identifiedNtagConfigurationPage = NfcIdentifyNtag.getIdentifiedNtagConfigurationPage();
                 writeToUiAppend(resultNfcWriting, "The configuration is starting in page " + identifiedNtagConfigurationPage);
@@ -171,6 +177,14 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                         // as I'm limiting the maximum ndef message we can read all data in one run
                         // build the matching strings for ud and mac
 
+                        // read the placeholder names from the shared preferences
+                        SharedPreferences prefs = getContext().getSharedPreferences(NdefSettingsFragment.PREFS_NAME, MODE_PRIVATE);
+                        String UID_NAME = prefs.getString(NdefSettingsFragment.PREFS_UID_NAME, null);
+                        String MAC_NAME = prefs.getString(NdefSettingsFragment.PREFS_MAC_NAME, null);
+                        if ((UID_NAME == null) || (UID_NAME.length() < 1) || (MAC_NAME == null) || (MAC_NAME.length() < 1)) {
+                            writeToUiAppend(resultNfcWriting, "Please setup the NDEF settings, aborted");
+                            return;
+                        }
                         StringBuilder sb = new StringBuilder();
                         // uid
                         sb.append(NdefSettingsFragment.UID_HEADER);
@@ -183,6 +197,11 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                         sb2.append(NdefSettingsFragment.MAC_NAME);
                         sb2.append(NdefSettingsFragment.MAC_FOOTER);
                         String macMatchString = sb.toString();
+
+                        // read the content of the the tag to find the match strings
+
+
+
 
                         // todo read all user memory pages and search for math strings
 
