@@ -245,7 +245,7 @@ public class Ntag21xMethods {
             // now we are converting the relative position of MAC mirror in 'page' and 'position in page'
             int newMirrorPage = 4 + (positionOfUid / 4); // NTAG 21x has 4 header pages
             writeToUiAppend(textView, "newPage: " + newMirrorPage);
-            int positionInPage = (positionOfUid / 4) - (newMirrorPage - 4);
+            int positionInPage = (positionOfUid / 4) - ((newMirrorPage - 4) * 4);
             writeToUiAppend(textView, "positionInPage: " + positionInPage);
             // set the bits depending on positionÍnPage - this could be more elegant but...
             if (positionInPage == 0) {
