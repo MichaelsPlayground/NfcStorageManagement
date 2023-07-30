@@ -93,9 +93,6 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
         return fragment;
     }
 
-    // AID is setup in apduservice.xml
-    // original AID: F0394148148100
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -319,7 +316,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
 
                     }
                     if (isActivateOn) {
-                        boolean resultEnable = enableUidMirror(nfcA, identifiedNtagConfigurationPage, 50);
+                        boolean resultEnable = enableUidMirror(nfcA, identifiedNtagConfigurationPage, 55);
                         if (!resultEnable) {
                             writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: FAILURE");
                             return;
@@ -362,6 +359,22 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
 
             doVibrate(getActivity());
 
+    }
+
+    /**
+     * read the content of the user memory upto 'numberOfBytes' - this is because the maximum NDEF length
+     * got defined in NdefSettingsFragment
+     * The content is used to find matching strings with UID and/or MAC
+     * Note: if any mirror is enabled on the tag the returned content is the VIRTUAL content including
+     * the mirror content, not the REAL content written in pages !
+     * @param nfcA
+     * @param numberOfBytes
+     * @return
+     */
+    private byte[] readNdefContent(NfcA nfcA, int numberOfBytes) {
+
+
+        return null;
     }
 
     /**
@@ -444,6 +457,15 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
         }
     }
 
+    /**
+     * enables the UID mirror and sets the mirror position
+     * if Counter mirror should be enabled before it gets disabled
+     * @param nfca
+     * @param pageOfConfiguration
+     * @param positionOfUid : the relative position within the user memory, so starting with 0
+     * @return true on success
+     */
+
     private boolean enableUidMirror(NfcA nfca, int pageOfConfiguration, int positionOfUid) {
         // sanity checks
         if ((nfca == null) || (!nfca.isConnected())) {
@@ -473,9 +495,9 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
             mirrorByteNew = Utils.setBitInByte(mirrorByteNew, 6);
 
             // now we are converting the relative position of UID mirror in 'page' and 'position in page'
-            int newMirrorPage = 4 + (positionOfUid / 4); // NTAG 21x has 4 header pages
+            int newMirrorPage = 6 + (positionOfUid / 4); // NTAG 21x has 4 header pages + '2' for static purposes
             writeToUiAppend(resultNfcWriting, "newPage: " + newMirrorPage);
-            int positionInPage = (positionOfUid / 4) - (newMirrorPage - 4);
+            int positionInPage = (positionOfUid / 4) - (newMirrorPage - 6);
             writeToUiAppend(resultNfcWriting, "positionInPage: " + positionInPage);
             // set the bits depending on positionÍnPage - this could be more elegant but...
             if (positionInPage == 0) {
@@ -497,6 +519,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
             // now copy the new contents to readResponse
             readPageResponse[0] = mirrorByteNew;
             readPageResponse[2] = mirrorPageByteNew;
+            writeToUiAppend(resultNfcWriting, "readPageResponse: " + Utils.bytesToHexNpe(readPageResponse));
             // write the page back to the tag
             byte[] writePageResponse = writeTagDataResponse(nfcA, pageOfConfiguration, readPageResponse);
             writeToUiAppend(resultNfcWriting, "write page to tag: " + Utils.bytesToHexNpe(writePageResponse));
@@ -512,6 +535,13 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
             return false;
         }
     }
+
+    /**
+     * disables ALL mirrors whether they are set or not and resets the position to facory settings
+     * @param nfca
+     * @param pageOfConfiguration
+     * @return true on success
+     */
 
     private boolean disableAllMirror(NfcA nfca, int pageOfConfiguration) {
         // sanity checks
