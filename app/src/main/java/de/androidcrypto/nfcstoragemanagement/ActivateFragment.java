@@ -66,7 +66,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
     com.google.android.material.textfield.TextInputEditText resultNfcWriting;
     RadioButton rbActivateGetStatus, rbActivateOn, rbActivateOff;
 
-    Ntag21xMethods ntagMethods = new Ntag21xMethods(resultNfcWriting);
+    Ntag21xMethods ntagMethods;
     private NfcAdapter mNfcAdapter;
     private NfcA nfcA;
 
@@ -120,6 +120,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
         rbActivateOff = getView().findViewById(R.id.rbActivateOff);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
+        ntagMethods = new Ntag21xMethods(getActivity(), resultNfcWriting);
     }
 
     /**
@@ -253,7 +254,21 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                         writeToUiAppend(resultNfcWriting, "Enabling the UID mirror: SUCCESS");
                     }
                     // the mac is calculated from uid using SHA-256 and shortened to 8 bytes length
+
                     byte[] shortenedHash = ntagMethods.getUidHashShort(tagUid);
+                    writeToUiAppend(resultNfcWriting, "tagUid: " + Utils.bytesToHexNpe(tagUid));
+                    writeToUiAppend(resultNfcWriting, "shortenedMAC: " + Utils.bytesToHexNpe(shortenedHash));
+                    // tagUid:    04437d82355b80
+                    // shortened: a2ae56c7
+
+                    // write mac to ndef
+                    boolean resultMac = ntagMethods.writeMacToNdef(nfcA, identifiedNtagConfigurationPage, shortenedHash, positionMacMatch);
+                    if (!resultMac) {
+                        writeToUiAppend(resultNfcWriting, "writing the MAC: FAILURE");
+                        return;
+                    } else {
+                        writeToUiAppend(resultNfcWriting, "writing the MAC: SUCCESS");
+                    }
                 }
                 if (isActivateOff) {
                     boolean resultEnable = disableAllMirror(nfcA, identifiedNtagConfigurationPage);
@@ -301,9 +316,9 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
         sb.append(preferenceHeader);
         sb.append(preference);
         sb.append(preferenceFooter);
-        String preferenveString = sb.toString();
-        writeToUiAppend(resultNfcWriting, "preferenceString: " + preferenveString);
-        return preferenveString;
+        String preferenceString = sb.toString();
+        writeToUiAppend(resultNfcWriting, "preferenceString: " + preferenceString);
+        return preferenceString;
     }
 
 

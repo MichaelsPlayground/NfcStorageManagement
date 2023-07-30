@@ -2,12 +2,14 @@ package de.androidcrypto.nfcstoragemanagement;
 
 import static de.androidcrypto.nfcstoragemanagement.Utils.testBit;
 
+import android.app.Activity;
 import android.nfc.TagLostException;
 import android.nfc.tech.NfcA;
 import android.text.TextUtils;
 import android.widget.TextView;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -18,9 +20,11 @@ import java.util.Arrays;
 
 public class Ntag21xMethods {
 
-    private TextView textView; // used for displaying informations from the functions
+    private TextView textView; // used for displaying information's from the functions
+    private Activity activity;
 
-    public Ntag21xMethods(TextView textView) {
+    public Ntag21xMethods(Activity activity, TextView textView) {
+        this.activity = activity;
         this.textView = textView;
     }
 
@@ -339,8 +343,15 @@ public class Ntag21xMethods {
     }
 
 
-    public boolean writeMacToNdef(NfcA nfcA, int pageOfConfiguration, byte[] shortenedMac, int macPosition) {
+    public boolean writeMacToNdef(NfcA nfcA, int pageOfConfiguration, byte[] shortenedMacToWrite, int macPosition) {
         // sanity checks
+
+        if (textView == null) {
+            System.out.println("writeMacToNdef textView is NULL");
+        } else {
+            System.out.println("writeMacToNdef textView is NOT NULL");
+        }
+
         if ((nfcA == null) || (!nfcA.isConnected())) {
             writeToUiAppend(textView, "NfcA is not available for reading, aborted");
             return false;
@@ -349,7 +360,7 @@ public class Ntag21xMethods {
             writeToUiAppend(textView, "wrong parameter for pageOfConfiguration, aborted");
             return false;
         }
-        if ((shortenedMac == null) || (shortenedMac.length != 8)) {
+        if ((shortenedMacToWrite == null) || (shortenedMacToWrite.length != 4)) {
             writeToUiAppend(textView, "wrong parameter for shortenedMac, aborted");
             return false;
         }
@@ -357,6 +368,8 @@ public class Ntag21xMethods {
             writeToUiAppend(textView, "wrong parameter for macPosition, aborted");
             return false;
         }
+        // get the hex encoded data of the first 4 bytes
+        byte[] shortenedMac = Utils.bytesToHexNpe(shortenedMacToWrite).getBytes(StandardCharsets.UTF_8);
 
         // read configuration page 0
         byte[] readPageResponse = getTagDataResponse(nfcA, pageOfConfiguration);
@@ -379,11 +392,12 @@ public class Ntag21xMethods {
             // now we are converting the relative position of MAC mirror in 'page' and 'position in page'
             int newMacPage = 4 + (macPosition / 4); // NTAG 21x has 4 header pages
             writeToUiAppend(textView, "newMacPage: " + newMacPage);
-            int positionInPage = (macPosition / 4) - (newMacPage - 4);
+            int positionInPage = (macPosition) - ((newMacPage - 4) * 4);
             writeToUiAppend(textView, "positionInPage: " + positionInPage);
             // we can write only 8 bytes in on writing we need to split up the 8 bytes shortenedMac
             boolean result = false;
             if (positionInPage == 0) {
+                writeToUiAppend(textView, "positionInPage section 0");
                 // the easiest option, write the first 4 bytes in the page and the next 4 bytes in the following page
                 result = writeTagDataResponseBoolean(nfcA, newMacPage, Arrays.copyOfRange(shortenedMac, 0, 4));
                 if (result) {
@@ -392,6 +406,7 @@ public class Ntag21xMethods {
                     if (result) return true;
                 }
             } else if (positionInPage == 1) {
+                writeToUiAppend(textView, "positionInPage section 1");
                 // write the first 3 bytes to page (but read the first byte to not overwrite the data)
                 // then write 4 bytes to the next page and write 1 byte in the over next page
                 byte[] readPage = getTagDataResponse(nfcA, newMacPage);
@@ -409,6 +424,7 @@ public class Ntag21xMethods {
                     }
                 }
             } else if (positionInPage == 2) {
+                writeToUiAppend(textView, "positionInPage section 2");
                 // write the first 2 bytes to page (but read the two first bytes to not overwrite the data)
                 // then write 4 bytes to the next page and write 2 byte in the over next page
                 byte[] readPage = getTagDataResponse(nfcA, newMacPage);
@@ -426,6 +442,7 @@ public class Ntag21xMethods {
                     }
                 }
             } else if (positionInPage == 3) {
+                writeToUiAppend(textView, "positionInPage section 3");
                 // write the first 1 bytes to page (but read the three first bytes to not overwrite the data)
                 // then write 4 bytes to the next page and write 3 bytes in the over next page
                 byte[] readPage = getTagDataResponse(nfcA, newMacPage);
@@ -554,9 +571,9 @@ public class Ntag21xMethods {
         return Arrays.copyOf(digest.digest(uid), 4);
     }
 
-    /*
-    private void writeToUiAppendOld(TextView textView, String message) {
-        getActivity().runOnUiThread(() -> {
+
+    private void writeToUiAppend(TextView textView, String message) {
+        activity.runOnUiThread(() -> {
             String oldString = textView.getText().toString();
             if (TextUtils.isEmpty(oldString)) {
                 textView.setText(message);
@@ -567,8 +584,9 @@ public class Ntag21xMethods {
             }
         });
     }
-     */
 
+
+    /*
     private void writeToUiAppend(TextView textView, String message) {
         String oldString = textView.getText().toString();
         if (TextUtils.isEmpty(oldString)) {
@@ -579,4 +597,5 @@ public class Ntag21xMethods {
             System.out.println(message);
         }
     }
+     */
 }
