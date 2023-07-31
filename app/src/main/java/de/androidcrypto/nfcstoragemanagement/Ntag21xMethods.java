@@ -15,18 +15,33 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 /**
- * The class takes all interactions with a NTAG21x tag
+ * The class takes all interactions with a NTAG21x tag using the NfcA class technology
  */
 
 public class Ntag21xMethods {
 
-    private TextView textView; // used for displaying information's from the functions
+    private TextView textView; // used for displaying information's from the methods
     private Activity activity;
 
     public Ntag21xMethods(Activity activity, TextView textView) {
         this.activity = activity;
         this.textView = textView;
     }
+
+    /**
+     * public methods
+     * readNdefContent - read the content of the user memory upto 'numberOfBytes'
+     * checkUidMirrorStatus - Checks the enabled or disabled UID mirroring on the tag and returns the mirror position
+     * enableUidMirror - enables the UID mirror and sets the mirror position, disables any enabled Counter mirror
+     * disableAllMirror - disables ALL mirrors whether they are set or not and resets the position to factory settings
+     *
+     * writeMacToNdef - writes a MAC to the NDEF file
+     *
+     *
+     */
+
+
+
 
     /**
      * read the content of the user memory upto 'numberOfBytes' - this is because the maximum NDEF length
@@ -37,6 +52,7 @@ public class Ntag21xMethods {
      *
      * @param nfcA
      * @param numberOfBytesToRead
+     * @param nfcaMaxTranceiveLength
      * @return
      */
     public byte[] readNdefContent(NfcA nfcA, int numberOfBytesToRead, int nfcaMaxTranceiveLength ) {
@@ -156,9 +172,9 @@ public class Ntag21xMethods {
      * @param nfcA
      * @param pageOfConfiguration page in ntag where configuration is starting, depending on NTAG sub type 213/215/216
      * @return uid mirror position
-     * return is -1 if uid mirror is disabled or errors applied in parameters
+     * return is the position of UID mirror or '-1' if uid mirror is disabled or errors applied in parameters
      */
-    private int checkUidMirrorStatus(NfcA nfcA, int pageOfConfiguration) {
+    public int checkUidMirrorStatus(NfcA nfcA, int pageOfConfiguration) {
         // sanity checks
         if ((nfcA == null) || (!nfcA.isConnected())) {
             writeToUiAppend(textView, "NfcA is not available for reading, aborted");
@@ -214,7 +230,7 @@ public class Ntag21xMethods {
      * @return true on success
      */
 
-    private boolean enableUidMirror(NfcA nfcA, int pageOfConfiguration, int positionOfUid) {
+    public boolean enableUidMirror(NfcA nfcA, int pageOfConfiguration, int positionOfUid) {
         // sanity checks
         if ((nfcA == null) || (!nfcA.isConnected())) {
             writeToUiAppend(textView, "NfcA is not available for reading, aborted");
@@ -285,13 +301,13 @@ public class Ntag21xMethods {
     }
 
     /**
-     * disables ALL mirrors whether they are set or not and resets the position to facory settings
+     * disables ALL mirrors whether they are set or not and resets the position to factory settings
      * @param nfcA
      * @param pageOfConfiguration
      * @return true on success
      */
 
-    private boolean disableAllMirror(NfcA nfcA, int pageOfConfiguration) {
+    public boolean disableAllMirror(NfcA nfcA, int pageOfConfiguration) {
         // sanity checks
         if ((nfcA == null) || (!nfcA.isConnected())) {
             writeToUiAppend(textView, "NfcA is not available for reading, aborted");
@@ -343,6 +359,15 @@ public class Ntag21xMethods {
     }
 
 
+    /**
+     * writes a MAC to the NDEF file. The MAC is calculated on the UID of the tag using a SHA-256 hash.
+     * The hash is shortend to 4 bytes and stored as 8 bytes long hex encoded data
+     * @param nfcA
+     * @param pageOfConfiguration, is '41', '131' or '227'
+     * @param shortenedMacToWrite, 8 bytes long
+     * @param macPosition, is a relative position within the user memory (user memory starts in page 4, position is 0
+     * @return true on success
+     */
     public boolean writeMacToNdef(NfcA nfcA, int pageOfConfiguration, byte[] shortenedMacToWrite, int macPosition) {
         // sanity checks
 
@@ -557,7 +582,7 @@ public class Ntag21xMethods {
      */
 
     /**
-     * The input value is SHA-256 hashed and the first 8 bytes are returned
+     * The input value is SHA-256 hashed and the first 4 bytes are returned
      * @param uid
      * @return
      */
