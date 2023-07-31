@@ -87,7 +87,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
     byte[] plaintextBytes = new byte[0];
     EditText passphraseDecryption;
     TextView readResult;
-    private NfcAdapter mNfcAdapter;
     Context contextSave;
 
     @Override
