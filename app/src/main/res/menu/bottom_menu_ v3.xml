@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/home"
+        android:icon="@drawable/ic_outline_home_24"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/read"
+        android:icon="@drawable/nfc_icon_r2"
+        android:title="Read" />
+
+    <item
+        android:id="@+id/read_ciphertext"
+        android:icon="@drawable/nfc_icon_re2"
+        android:title="Read Encr" />
+
+    <item
+        android:id="@+id/activate"
+        android:icon="@drawable/outline_attractions_24"
+        android:title="activate" />
+
+    <item
+        android:id="@+id/ndef_settings"
+        android:icon="@drawable/outline_settings_24"
+        android:title="NDEF settings" />
+
+</menu>
