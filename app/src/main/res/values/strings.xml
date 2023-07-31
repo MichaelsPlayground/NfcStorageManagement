@@ -18,5 +18,7 @@
     <string name="header_activate">Activate the mirroring of data to NDEF message</string>
     <string name="description_activate">Activates the mirroring of data (UID, read counter and MAC) in an NDEF message on tapping</string>
     <string name="description_activate_rg">choose your action</string>
+    <string name="header_personalize_tag">Run all steps to personalize a tag for NDEF mirroring</string>
+    <string name="description_personalize_tag">This are the steps that will run when a tag is tapped\n\n1. write the NDEF template to the tag\n2. disable all existing mirror\n3. enable UID mirroring\n4. write the UID-based MAC to the tag</string>
 
 </resources>
