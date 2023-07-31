@@ -63,11 +63,6 @@ public class ReadFragment extends Fragment implements NfcAdapter.ReaderCallback 
 
     TextView readResult;
     private NfcAdapter mNfcAdapter;
-    String dumpExportString = "";
-    String tagIdString = "";
-    String tagTypeString = "";
-    private static final int REQUEST_PERMISSION_WRITE_EXTERNAL_STORAGE = 100;
-    Context contextSave;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -76,14 +71,12 @@ public class ReadFragment extends Fragment implements NfcAdapter.ReaderCallback 
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-        contextSave = getActivity().getApplicationContext();
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this.getContext());
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         readResult = getView().findViewById(R.id.tvReadResult);
-        //doVibrate();
     }
 
     @Override
@@ -153,14 +146,17 @@ public class ReadFragment extends Fragment implements NfcAdapter.ReaderCallback 
                     getActivity().runOnUiThread(() -> {
                         readResult.setText(finalNdefText);
                     });
-
                 }
+                // if (ndefRecordsCount > 0) {
+            } else {
+                requireActivity().runOnUiThread(() -> {
+                    readResult.setText("I read the content but there are no NDEF records available to read");
+                });
             }
         } else {
             getActivity().runOnUiThread(() -> {
                 readResult.setText("There was an error in NDEF data");
             });
-
         }
         doVibrate(getActivity());
         playSinglePing(getContext());

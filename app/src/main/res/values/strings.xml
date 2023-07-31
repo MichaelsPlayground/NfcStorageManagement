@@ -14,7 +14,9 @@
     <string name="action_licenses">Used material and their licenses</string>
     <string name="header_ndef_settings">NDEF message settings</string>
     <string name="description_ndef_settings">Writes the NDEF message template to the NTAG with defined placeholders for UID, read counter and MAC.\n\nThis is working on tag types NTAG213, 215 or 216 only.</string>
+    <string name="description_ndef_settings_2">There are 2 steps to do:\n1. press the TEST AND SAVE NDEF SETTINGS button\n2. tap a NTAG21x tag to the reader</string>
     <string name="header_activate">Activate the mirroring of data to NDEF message</string>
     <string name="description_activate">Activates the mirroring of data (UID, read counter and MAC) in an NDEF message on tapping</string>
     <string name="description_activate_rg">choose your action</string>
+
 </resources>

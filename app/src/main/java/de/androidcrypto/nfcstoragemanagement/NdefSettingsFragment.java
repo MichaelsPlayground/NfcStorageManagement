@@ -2,12 +2,9 @@ package de.androidcrypto.nfcstoragemanagement;
 
 import static android.content.Context.MODE_PRIVATE;
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
-import static de.androidcrypto.nfcstoragemanagement.Utils.hexStringToByteArray;
-import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -21,17 +18,12 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -125,18 +117,16 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
         ndefMacName = getView().findViewById(R.id.etNdefSettingsMacName);
         ndefResultNfcWriting = getView().findViewById(R.id.etNdefSettingsResult);
         testNdefSettings = getView().findViewById(R.id.btnNdefSettingsTest);
-        // todo switches
 
         fetchButtonClicks(view);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
-
-
     }
 
     private void fetchButtonClicks(View view){
 
         testNdefSettings = getView().findViewById(R.id.btnNdefSettingsTest);
+        //testNdefSettings = view.findViewById(R.id.btnNdefSettingsTest); // todo check if this is better !
         testNdefSettings.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -204,8 +194,8 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
 
     @Override
     public void onTagDiscovered(Tag tag) {
-// Read and or write to Tag here to the appropriate Tag Technology type class
-        // in this example the card should be an Ndef Technology Type
+        // Read and or write to Tag here to the appropriate Tag Technology type class
+        // in this example the card should be an NDEF Technology Type
 
         Ndef mNdef = Ndef.get(tag);
 
@@ -229,7 +219,7 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
                     return;
                 }
                 if (messageSize == 0) {
-                    showMessage("Message is empty (run 'test NDEF settings' first, aborted");
+                    showMessage("Message is empty (run 'test and save NDEF settings' first, aborted");
                     return;
                 }
                 NdefRecord ndefRecord = NdefRecord.createUri(ndefTemplateString);
@@ -288,7 +278,7 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
             }
         }
         else {
-            showMessage("Tag not formattable or already formatted to Ndef");
+            showMessage("Tag is not formattable or already formatted to NDEF");
         }
     }
 

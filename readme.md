@@ -66,3 +66,4 @@ Icon / Vector editor: https://editor.method.ac/
 
 Minimum SDK is 26 (Android 8)
 
+android:inputType="text|textNoSuggestions"

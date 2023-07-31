@@ -3,7 +3,12 @@ package de.androidcrypto.nfcstoragemanagement;
 import static de.androidcrypto.nfcstoragemanagement.Utils.testBit;
 
 import android.app.Activity;
+import android.nfc.FormatException;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.Tag;
 import android.nfc.TagLostException;
+import android.nfc.tech.NdefFormatable;
 import android.nfc.tech.NfcA;
 import android.text.TextUtils;
 import android.widget.TextView;
@@ -37,10 +42,8 @@ public class Ntag21xMethods {
      *
      * writeMacToNdef - writes a MAC to the NDEF file
      *
-     *
+     * formatNdef - formats a NDEF capable tag to factory settings, uses the NDEF technology class
      */
-
-
 
 
     /**
@@ -573,6 +576,32 @@ public class Ntag21xMethods {
             writeToUiAppend(textView, "ERROR: IOEexception: " + e);
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * formats a NDEF capable tag to factory settings, uses the NDEF technology class
+     * @param tag - directly get from onDiscovered method
+     */
+    public void formatNdef(Tag tag) {
+        // trying to format the tag
+        NdefFormatable format = NdefFormatable.get(tag);
+        if(format != null){
+            try {
+                format.connect();
+                format.format(new NdefMessage(new NdefRecord(NdefRecord.TNF_EMPTY, null, null, null)));
+                format.close();
+                writeToUiAppend(textView,"Tag formatted, try again to write on tag");
+            } catch (IOException e) {
+                writeToUiAppend(textView,"Failed to connect");
+                e.printStackTrace();
+            } catch (FormatException e) {
+                writeToUiAppend(textView,"Failed Format");
+                e.printStackTrace();
+            }
+        }
+        else {
+            writeToUiAppend(textView,"Tag is not formattable or already formatted to NDEF");
         }
     }
 
