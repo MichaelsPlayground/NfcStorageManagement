@@ -36,8 +36,8 @@ public class MainActivity extends AppCompatActivity {
             selectedFragment = new HomeFragment();
         } else if (itemId == R.id.read) {
             selectedFragment = new ReadFragment();
-        } else if (itemId == R.id.read_ciphertext) {
-            selectedFragment = new ReadCiphertextFragment();
+        } else if (itemId == R.id.personalize_tag) {
+            selectedFragment = new PersonalizeTagFragment();
         } else if (itemId == R.id.activate) {
             selectedFragment = new ActivateFragment();
         } else if (itemId == R.id.ndef_settings) {
