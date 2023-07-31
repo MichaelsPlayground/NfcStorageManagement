@@ -11,6 +11,7 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
+import android.nfc.tech.NfcA;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -39,9 +40,18 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+
+    private com.google.android.material.textfield.TextInputEditText resultNfcWriting;
+
+    private Ntag21xMethods ntagMethods;
+    private NfcAdapter mNfcAdapter;
+    private Tag tag;
+    private NfcA nfcA;
+
+    private int identifiedNtagConfigurationPage; // this  is the stating point for any work on configuration
+    private byte[] tagUid; // written by onDiscovered
 
     public PersonalizeTagFragment() {
         // Required empty public constructor
@@ -93,6 +103,11 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+
+        resultNfcWriting = getView().findViewById(R.id.etPersonalizeResult);
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
+        ntagMethods = new Ntag21xMethods(getActivity(), resultNfcWriting);
+
         readResult = getView().findViewById(R.id.tvReadResult);
 
         ndefMessage = getView().findViewById(R.id.tvNdefMessage);

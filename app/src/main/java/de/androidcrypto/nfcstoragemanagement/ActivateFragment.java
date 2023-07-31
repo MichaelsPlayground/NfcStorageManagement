@@ -44,10 +44,10 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
     private String mParam1;
     private String mParam2;
 
-    com.google.android.material.textfield.TextInputEditText resultNfcWriting;
-    RadioButton rbActivateGetStatus, rbActivateOn, rbActivateOff;
+    private com.google.android.material.textfield.TextInputEditText resultNfcWriting;
+    private RadioButton rbActivateGetStatus, rbActivateOn, rbActivateOff;
 
-    Ntag21xMethods ntagMethods;
+    private Ntag21xMethods ntagMethods;
     private NfcAdapter mNfcAdapter;
     private NfcA nfcA;
 
