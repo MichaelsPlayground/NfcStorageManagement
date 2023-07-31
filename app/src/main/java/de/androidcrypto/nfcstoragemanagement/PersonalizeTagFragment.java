@@ -4,6 +4,8 @@ import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
 import android.content.Intent;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
@@ -22,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -41,9 +44,10 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
     private static final String TAG = PersonalizeTagFragment.class.getName();
     private com.google.android.material.textfield.TextInputEditText resultNfcWriting;
 
+    private PreferencesHandling preferencesHandling;
     private Ntag21xMethods ntagMethods;
     private NfcAdapter mNfcAdapter;
-    private Tag nTag;
+    private Tag discoveredTag;
     private NfcA nfcA;
     private Ndef ndef;
 
@@ -87,6 +91,7 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
 
         resultNfcWriting = getView().findViewById(R.id.etPersonalizeResult);
         mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
+        preferencesHandling = new PreferencesHandling(getActivity(), getContext(), resultNfcWriting);
         ntagMethods = new Ntag21xMethods(getActivity(), resultNfcWriting);
     }
 
@@ -107,13 +112,86 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
          */
 
         // step 1 a: connect to NDEF and write the NDEF template to the tag
-        boolean success = connectNfca(nfcA, ndef);
+        boolean success = ntagMethods.connectNdef(nfcA, ndef);
         if (!success) {
             writeToUiAppend(resultNfcWriting, "could not connect with NDEF, aborted");
             return false;
         }
-        // step 1 b:
 
+        // step 1 b: check that the tag is writable
+        if (!ndef.isWritable()) {
+            writeToUiAppend(resultNfcWriting,"NFC tag is not writable, aborted");
+            return false;
+        }
+
+        // step 1 c: build the template string
+        String templateUrlString = preferencesHandling.getPreferencesString(NdefSettingsFragment.PREFS_TEMPLATE_URL_NAME);
+        if (TextUtils.isEmpty(templateUrlString)) {
+            writeToUiAppend(resultNfcWriting, "could not get the templateUrlString, aborted");
+            writeToUiAppend(resultNfcWriting, "Did you forget to save the NDEF settings ?");
+            return false;
+        }
+
+        // step 1 d: write the templateUrlString to the tag
+        success = ntagMethods.writeNdefMessageUrl(ndef, templateUrlString);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not write the templateUrlString with NDEF, aborted");
+            return false;
+        }
+
+        // step 2: connect to NcfA and disable all mirrors
+        // step 2 a: connect to NcfA
+        success = ntagMethods.connectNfca(nfcA, ndef);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not connect with NcfA, aborted");
+            return false;
+        }
+
+        // step 2 b: get the UID of the tag
+        byte[] tagUid = ntagMethods.getTagUid(discoveredTag);
+        if (tagUid == null) {
+            writeToUiAppend(resultNfcWriting,"could not retrieve the UID of the tag, aborted");
+            return false;
+        }
+        writeToUiAppend(resultNfcWriting, Utils.printData("UID", tagUid));
+
+        // step 2 c: identify the tag
+        String ntagVersion = NfcIdentifyNtag.checkNtagType(nfcA, tagUid);
+        if ((!ntagVersion.equals("213")) && (!ntagVersion.equals("215")) && (!ntagVersion.equals("216"))) {
+            writeToUiAppend(resultNfcWriting,"NFC tag is NOT of type NXP NTAG213/215/216, aborted");
+            return false;
+        }
+
+        // step 2 d: get technical data of NTAG
+        int nfcaMaxTransceiveLength = ntagMethods.getTransceiveLength(nfcA);
+        if (nfcaMaxTransceiveLength < 1) {
+            writeToUiAppend(resultNfcWriting,"maximum transceive length is insufficient, aborted");
+            return false;
+
+        }
+        int ntagPages = NfcIdentifyNtag.getIdentifiedNtagPages();
+        identifiedNtagConfigurationPage = NfcIdentifyNtag.getIdentifiedNtagConfigurationPage();
+        writeToUiAppend(resultNfcWriting, "The configuration is starting in page " + identifiedNtagConfigurationPage);
+
+        // step 2 d: disabling all counters
+        success = ntagMethods.disableAllMirror(nfcA, identifiedNtagConfigurationPage);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not disable all mirrors, aborted");
+            return false;
+        }
+
+
+
+
+
+        // step 1 b: get the template string
+
+        String ntagDataString = new String(ntagMemory, StandardCharsets.UTF_8);
+        writeToUiAppend(resultNfcWriting, "ntagDataString:\n" + ntagDataString);
+        // step 1 c: read the preferences and build the template string
+        String baseUrl = preferencesHandling.getPreferencesString(NdefSettingsFragment.PREFS_BASE_URL);
+        String uid = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_UID_NAME, NdefSettingsFragment.UID_HEADER, NdefSettingsFragment.UID_FOOTER);
+        String mac = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_UID_NAME, NdefSettingsFragment.UID_HEADER, NdefSettingsFragment.UID_FOOTER);
         return false;
     }
 
@@ -167,6 +245,7 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         // Read and or write to Tag here to the appropriate Tag Technology type class
         // in this example the card should be an Ndef Technology Type
 
+        discoveredTag = tag;
         nfcA = NfcA.get(tag);
         ndef = Ndef.get(tag);
 

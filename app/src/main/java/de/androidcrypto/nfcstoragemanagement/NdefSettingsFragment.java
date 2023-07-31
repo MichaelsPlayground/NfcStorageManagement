@@ -60,12 +60,15 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
     public static String MAC_NAME = "";
     public static final String MAC_FOOTER = "=";
     public static final String MAC_TEMPLATE = "22222222";
+
     private static String ndefTemplateString = "";
     private static final String NDEF_BASE_URL_TEMPLATE = "http://fluttercrypto.bplaced.net/apps/ntag/get_reg3.php";
     public static final int NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH = 137; // maximum length of an NDEF message on a NTAG213
     public static final String PREFS_NAME = "prefs";
+    public static final String PREFS_BASE_URL = "baseUrl";
     public static final String PREFS_UID_NAME = "uid";
     public static final String PREFS_MAC_NAME = "mac";
+    public static final String PREFS_TEMPLATE_URL_NAME = "templateUrl";
 
     private NfcAdapter mNfcAdapter;
 
@@ -171,6 +174,10 @@ public class NdefSettingsFragment extends Fragment implements NfcAdapter.ReaderC
                 editor.putString(PREFS_UID_NAME, UID_NAME);
                 editor.apply();
                 editor.putString(PREFS_MAC_NAME, MAC_NAME);
+                editor.apply();
+                editor.putString(PREFS_BASE_URL, ndefBaseUrl.getText().toString());
+                editor.apply();
+                editor.putString(PREFS_TEMPLATE_URL_NAME, ndefTemplateString);
                 editor.apply();
                 ndefResultNfcWriting.setText("NDEF settings saved");
             }

@@ -129,8 +129,8 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                 // tagUid
                 tagUid = nfcA.getTag().getId();
 
-                int nfcaMaxTranceiveLength = nfcA.getMaxTransceiveLength(); // important for the readFast command
-                Log.d(TAG, "nfcaMaxTranceiveLength: " + nfcaMaxTranceiveLength);
+                int nfcaMaxTransceiveLength = nfcA.getMaxTransceiveLength(); // important for the readFast command
+                Log.d(TAG, "nfcaMaxTransceiveLength: " + nfcaMaxTransceiveLength);
                 int ntagPages = NfcIdentifyNtag.getIdentifiedNtagPages();
                 identifiedNtagConfigurationPage = NfcIdentifyNtag.getIdentifiedNtagConfigurationPage();
                 writeToUiAppend(resultNfcWriting, "The configuration is starting in page " + identifiedNtagConfigurationPage);
@@ -142,7 +142,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                         " bytes\n" +
                         "tag ID: " + Utils.bytesToHexNpe(NfcIdentifyNtag.getIdentifiedNtagId()) + "\n" +
                         "tag ID: " + tagIdString + "\n";
-                nfcaContent = nfcaContent + "maxTranceiveLength: " + nfcaMaxTranceiveLength + " bytes\n";
+                nfcaContent = nfcaContent + "maxTranceiveLength: " + nfcaMaxTransceiveLength + " bytes\n";
                 writeToUiAppend(resultNfcWriting, nfcaContent);
                 // read the complete memory depending on ntag type
                 byte[] ntagMemory = new byte[ntagMemoryBytes];
@@ -163,7 +163,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                     // read the content of the the tag to find the match strings, for this we are reading the complete NDEF content
                     int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
                     //ntagMemory = readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTranceiveLength);
-                    ntagMemory = ntagMethods.readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTranceiveLength);
+                    ntagMemory = ntagMethods.readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTransceiveLength);
                     if ((ntagMemory == null) || (ntagMemory.length < 10)) {
                         writeToUiAppend(resultNfcWriting, "Error - could not read enough data from tag, aborted");
                         return;
@@ -205,7 +205,7 @@ public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallb
                     // note that this can fail is a mirror is active on the tag that overwrites the placeholders
                     int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
                     //ntagMemory = readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTranceiveLength);
-                    ntagMemory = ntagMethods.readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTranceiveLength);
+                    ntagMemory = ntagMethods.readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTransceiveLength);
                     if ((ntagMemory == null) || (ntagMemory.length < 10)) {
                         writeToUiAppend(resultNfcWriting, "Error - could not read enough data from tag, aborted");
                         return;

@@ -67,6 +67,26 @@ public class Utils {
         return (array[index] & mask) != 0;
     }
 
+    public static String printData(String dataName, byte[] data) {
+        int dataLength;
+        String dataString = "";
+        if (data == null) {
+            dataLength = 0;
+            dataString = "IS NULL";
+        } else {
+            dataLength = data.length;
+            dataString = bytesToHexNpe(data);
+        }
+        StringBuilder sb = new StringBuilder();
+        sb
+                .append(dataName)
+                .append(" length: ")
+                .append(dataLength)
+                .append(" data: ")
+                .append(dataString);
+        return sb.toString();
+    }
+
     public static String byteToHex(Byte input) {
         return String.format("%02X", input);
         //return String.format("0x%02X", input);

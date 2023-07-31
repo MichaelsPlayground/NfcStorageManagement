@@ -8,9 +8,11 @@ import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.Tag;
 import android.nfc.TagLostException;
+import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
 import android.nfc.tech.NfcA;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -24,6 +26,7 @@ import java.util.Arrays;
  */
 
 public class Ntag21xMethods {
+    private static final String TAG = Ntag21xMethods.class.getName();
 
     private TextView textView; // used for displaying information's from the methods
     private Activity activity;
@@ -35,6 +38,12 @@ public class Ntag21xMethods {
 
     /**
      * public methods
+     *
+     * connectNfca - closes a pre-connected NDEF and connects to NcfA
+     * connectNdef - closes a pre-connected NcfA and connects to Ndef
+     * getTagUid - returns the UID of the tag
+     * getTransceiveLength - returns the transceive length
+     *
      * readNdefContent - read the content of the user memory upto 'numberOfBytes'
      * checkUidMirrorStatus - Checks the enabled or disabled UID mirroring on the tag and returns the mirror position
      * enableUidMirror - enables the UID mirror and sets the mirror position, disables any enabled Counter mirror
@@ -42,9 +51,94 @@ public class Ntag21xMethods {
      *
      * writeMacToNdef - writes a MAC to the NDEF file
      *
+     * writeNdefMessageUrl - writes an URL within a NDEF message as NDEF type URL to the tag
      * formatNdef - formats a NDEF capable tag to factory settings, uses the NDEF technology class
      */
 
+
+
+
+
+    /**
+     * connectNfca closes a pre-connected NDEF and connects to NcfA
+     * @param nfcA
+     * @param ndef
+     * @return true on success
+     */
+    public boolean connectNfca(NfcA nfcA, Ndef ndef) {
+        if ((nfcA == null) || (ndef == null)) {
+            writeToUiAppend(textView, "nfcA or ndef is NULL, aborted");
+            return false;
+        }
+        try {
+            if (ndef.isConnected()) {
+                Log.d(TAG, "ndef was connected, trying to close ndef");
+                ndef.close();
+                Log.d(TAG, "ndef is closed");
+            }
+            nfcA.connect();
+            writeToUiAppend(textView, "nfcA is connected");
+            return true;
+        } catch (IOException e) {
+            writeToUiAppend(textView, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * connectNdef closes a pre-connected NcfA and connects to Ndef
+     * @param nfcA
+     * @param ndef
+     * @return true on success
+     */
+    public boolean connectNdef(NfcA nfcA, Ndef ndef) {
+        if ((nfcA == null) || (ndef == null)) {
+            writeToUiAppend(textView, "nfcA or ndef is NULL, aborted");
+            return false;
+        }
+        try {
+            if (nfcA.isConnected()) {
+                Log.d(TAG, "nfcA was connected, trying to close nfcA");
+                ndef.close();
+                Log.d(TAG, "nfcA is closed");
+            }
+            ndef.connect();
+            writeToUiAppend(textView, "ndef is connected");
+            return true;
+        } catch (IOException e) {
+            writeToUiAppend(textView, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * getUid returns the UID of the tag
+     * @param tag
+     * @return a 7 bytes long array on success or null on failure
+     */
+    public byte[] getTagUid (Tag tag) {
+        try {
+            return tag.getId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * getTransceiveLength returns the transceive length
+     * The value is important for following read fast commands
+     * @param nfcA
+     * @return the transceive length or -1 on failure
+     */
+    public int getTransceiveLength(NfcA nfcA) {
+        try {
+            return nfcA.getMaxTransceiveLength(); // important for the readFast command
+        } catch (Exception e) {
+            return -1;
+        }
+    }
 
     /**
      * read the content of the user memory upto 'numberOfBytes' - this is because the maximum NDEF length
@@ -577,6 +671,27 @@ public class Ntag21xMethods {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * writes an URL within a NDEF message as NDEF type URL to the tag
+     * @param ndef
+     * @param urlToWrite
+     * @return true if success
+     */
+    public boolean writeNdefMessageUrl(Ndef ndef, String urlToWrite) {
+        try {
+            NdefRecord ndefRecord = NdefRecord.createUri(urlToWrite);
+            NdefMessage ndefMessage= new NdefMessage(ndefRecord);
+            ndef.writeNdefMessage(ndefMessage);
+            return true;
+        } catch (FormatException e) {
+            writeToUiAppend(textView, "ERROR: FormatEexception: " + e);
+        } catch (IOException e) {
+            writeToUiAppend(textView, "ERROR: IOEexception: " + e);
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
