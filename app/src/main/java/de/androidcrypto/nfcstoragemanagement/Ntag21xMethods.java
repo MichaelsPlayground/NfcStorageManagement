@@ -43,21 +43,15 @@ public class Ntag21xMethods {
      * connectNdef - closes a pre-connected NcfA and connects to Ndef
      * getTagUid - returns the UID of the tag
      * getTransceiveLength - returns the transceive length
-     *
      * readNdefContent - read the content of the user memory upto 'numberOfBytes'
      * checkUidMirrorStatus - Checks the enabled or disabled UID mirroring on the tag and returns the mirror position
      * enableUidMirror - enables the UID mirror and sets the mirror position, disables any enabled Counter mirror
      * disableAllMirror - disables ALL mirrors whether they are set or not and resets the position to factory settings
-     *
      * writeMacToNdef - writes a MAC to the NDEF file
-     *
      * writeNdefMessageUrl - writes an URL within a NDEF message as NDEF type URL to the tag
      * formatNdef - formats a NDEF capable tag to factory settings, uses the NDEF technology class
+     *
      */
-
-
-
-
 
     /**
      * connectNfca closes a pre-connected NDEF and connects to NcfA
@@ -201,8 +195,6 @@ public class Ntag21xMethods {
                 }
             } // for
             // now we read the nfcaMaxTranceiveModuloLength bytes, for a NTAG216 = 132 bytes
-            //nfcaContent = nfcaContent + "starting last round: " + "\n";
-            //System.out.println("starting last round: ");
             byte[] commandF = new byte[]{
                     (byte) 0x3A,  // FAST_READ
                     (byte) ((4 + (nfcaMaxTranceive4ByteTrunc * nfcaNrOfFullReadings)) & 0x0ff), // page 4 is the first user memory page
@@ -455,7 +447,6 @@ public class Ntag21xMethods {
         }
     }
 
-
     /**
      * writes a MAC to the NDEF file. The MAC is calculated on the UID of the tag using a SHA-256 hash.
      * The hash is shortend to 4 bytes and stored as 8 bytes long hex encoded data
@@ -467,13 +458,11 @@ public class Ntag21xMethods {
      */
     public boolean writeMacToNdef(NfcA nfcA, int pageOfConfiguration, byte[] shortenedMacToWrite, int macPosition) {
         // sanity checks
-
         if (textView == null) {
             System.out.println("writeMacToNdef textView is NULL");
         } else {
             System.out.println("writeMacToNdef textView is NOT NULL");
         }
-
         if ((nfcA == null) || (!nfcA.isConnected())) {
             writeToUiAppend(textView, "NfcA is not available for reading, aborted");
             return false;

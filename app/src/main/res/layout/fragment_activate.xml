@@ -110,8 +110,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            app:dividerInsetEnd="8dp"
-            app:dividerInsetStart="8dp" />
+            android:layout_marginBottom="8dp"
+            app:dividerInsetEnd="16dp"
+            app:dividerInsetStart="16dp"
+            app:dividerThickness="4dp" />
 
     </LinearLayout>
 </ScrollView>
