@@ -2,6 +2,7 @@ package de.androidcrypto.nfcstoragemanagement;
 
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
+import static de.androidcrypto.nfcstoragemanagement.Utils.printData;
 
 import android.content.Intent;
 import android.nfc.NdefMessage;
@@ -180,61 +181,50 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
             return false;
         }
 
-
-
-
-
-        // step 1 b: get the template string
-
-        String ntagDataString = new String(ntagMemory, StandardCharsets.UTF_8);
-        writeToUiAppend(resultNfcWriting, "ntagDataString:\n" + ntagDataString);
-        // step 1 c: read the preferences and build the template string
-        String baseUrl = preferencesHandling.getPreferencesString(NdefSettingsFragment.PREFS_BASE_URL);
-        String uid = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_UID_NAME, NdefSettingsFragment.UID_HEADER, NdefSettingsFragment.UID_FOOTER);
-        String mac = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_UID_NAME, NdefSettingsFragment.UID_HEADER, NdefSettingsFragment.UID_FOOTER);
-        return false;
-    }
-
-    private boolean connectNfca(NfcA nfcA, Ndef ndef) {
-        if ((nfcA == null) || (ndef == null)) {
-            writeToUiAppend(resultNfcWriting, "nfcA or ndef is NULL, aborted");
+        // step 3 enable UID mirroring
+        // step 3 a:
+        int maximumBytesToRead = NdefSettingsFragment.NDEF_TEMPLATE_STRING_MAXIMUM_LENGTH + 7; // + 7 NDEF header bytes, so it total 144 bytes
+        byte[] ntagMemory = ntagMethods.readNdefContent(nfcA, maximumBytesToRead, nfcaMaxTransceiveLength);
+        if ((ntagMemory == null) || (ntagMemory.length < 10)) {
+            writeToUiAppend(resultNfcWriting, "Error - could not read enough data from tag, aborted");
             return false;
         }
-        try {
-            if (ndef.isConnected()) {
-                Log.d(TAG, "ndef was connected, trying to close ndef");
-                ndef.close();
-                Log.d(TAG, "ndef is closed");
-            }
-            nfcA.connect();
-            writeToUiAppend(resultNfcWriting, "nfcA is connected");
-            return true;
-        } catch (IOException e) {
-            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
-            e.printStackTrace();
-            return false;
-        }
-    }
 
-    private boolean connectNdef(NfcA nfcA, Ndef ndef) {
-        if ((nfcA == null) || (ndef == null)) {
-            writeToUiAppend(resultNfcWriting, "nfcA or ndef is NULL, aborted");
+        // step 3 b: read the placeholder names from the shared preferences
+        String uidMatchString = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_UID_NAME, NdefSettingsFragment.UID_HEADER, NdefSettingsFragment.UID_FOOTER);
+        String macMatchString = preferencesHandling.getPreferencesMatchString(NdefSettingsFragment.PREFS_MAC_NAME, NdefSettingsFragment.MAC_HEADER, NdefSettingsFragment.MAC_FOOTER);
+
+        // search for match strings and add length of match string for the next position to write the data
+        int positionUidMatch = preferencesHandling.getPlaceholderPosition(templateUrlString, uidMatchString);
+        int positionMacMatch = preferencesHandling.getPlaceholderPosition(templateUrlString, macMatchString);
+        // both values need to be > 1
+        writeToUiAppend(resultNfcWriting, "positionUidMatch: " + positionUidMatch + " || positionMacMatch: " + positionMacMatch);
+        if ((positionUidMatch < 1) || (positionMacMatch < 1)) {
+            writeToUiAppend(resultNfcWriting, "Error - insufficient matching positions found, aborted");;
+            return false;
+        } else {
+            writeToUiAppend(resultNfcWriting, "positive matching positions, now enable mirroring");
+        }
+
+        // step 3 c: enable UID counter
+        success = ntagMethods.enableUidMirror(nfcA, identifiedNtagConfigurationPage, positionUidMatch);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not enable UID mirror, aborted");
             return false;
         }
-        try {
-            if (nfcA.isConnected()) {
-                Log.d(TAG, "nfcA was connected, trying to close nfcA");
-                ndef.close();
-                Log.d(TAG, "nfcA is closed");
-            }
-            ndef.connect();
-            writeToUiAppend(resultNfcWriting, "ndef is connected");
-            return true;
-        } catch (IOException e) {
-            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
-            e.printStackTrace();
+
+        // step 3 d: calculate the MAC from uid using SHA-256 and shortened to 8 bytes length
+        byte[] shortenedHash = ntagMethods.getUidHashShort(tagUid);
+        writeToUiAppend(resultNfcWriting, printData("shortenedHash", shortenedHash));
+
+        // step 3 e: write mac to tag
+        success = ntagMethods.writeMacToNdef(nfcA, identifiedNtagConfigurationPage, shortenedHash, positionMacMatch);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not write MAC, aborted");
             return false;
         }
+        writeToUiAppend(resultNfcWriting, "The tag was personalized with SUCCESS");
+        return true;
     }
 
     // This method is running in another thread when a card is discovered
@@ -251,27 +241,10 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
 
         writeToUiAppend(resultNfcWriting, "NFC tag discovered");
 
-        boolean personalizeResult = runCompletePersonalize();
-
-
-        /*
-        Ndef mNdef = Ndef.get(tag);
-
-        if (mNdef == null) {
-            getActivity().runOnUiThread(() -> {
-                Toast.makeText(getContext(),
-                        "mNdef is null",
-                        Toast.LENGTH_SHORT).show();
-            });
+        boolean success = runCompletePersonalize();
+        if (success) {
+            doVibrate(getActivity());
         }
-
-        // Check that it is an Ndef capable card
-        if (mNdef != null) {
-
-        }
-        */
-        doVibrate(getActivity());
-        playSinglePing(getContext());
     }
 
     /**
