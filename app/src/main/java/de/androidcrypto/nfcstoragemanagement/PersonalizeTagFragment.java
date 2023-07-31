@@ -75,20 +75,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         return fragment;
     }
 
-    TextView ndefMessage;
-    Button decryptCiphertext;
-    String ndefMessageString;
-    com.google.android.material.textfield.TextInputLayout saltLayout, nonceLayout, ciphertextLayout, passphraseLayout, decryptedPlaintextLayout;
-
-    TextView ciphertextFound;
-    TextView salt, nonce, ciphertext; // data shown as hex string
-    TextView plaintext; // data shown as string
-    byte[] saltBytes = new byte[0], nonceBytes = new byte[0], ciphertextBytes = new byte[0]; // real data
-    byte[] plaintextBytes = new byte[0];
-    EditText passphraseDecryption;
-    TextView readResult;
-    Context contextSave;
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,7 +82,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-        contextSave = getActivity().getApplicationContext();
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this.getContext());
     }
 
@@ -106,50 +91,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         resultNfcWriting = getView().findViewById(R.id.etPersonalizeResult);
         mNfcAdapter = NfcAdapter.getDefaultAdapter(getView().getContext());
         ntagMethods = new Ntag21xMethods(getActivity(), resultNfcWriting);
-
-        readResult = getView().findViewById(R.id.tvReadResult);
-
-        ndefMessage = getView().findViewById(R.id.tvNdefMessage);
-        ciphertextFound = getView().findViewById(R.id.tvNdefCiphertextFound);
-        salt = getView().findViewById(R.id.tvNdefSalt);
-        nonce = getView().findViewById(R.id.tvNdefNonce);
-        ciphertext = getView().findViewById(R.id.tvNdefCiphertext);
-        plaintext = getView().findViewById(R.id.tvPlaintextDecrypted);
-        decryptCiphertext = getView().findViewById(R.id.btnDecryptCiphertext);
-        passphraseDecryption = getView().findViewById(R.id.etPassphraseDecryption);
-        saltLayout = getView().findViewById(R.id.tvNdefSaltLayout);
-        nonceLayout = getView().findViewById(R.id.tvNdefNonceLayout);
-        ciphertextLayout = getView().findViewById(R.id.tvNdefCiphertextLayout);
-        passphraseLayout = getView().findViewById(R.id.etPassphraseDecryptionLayout);
-        decryptedPlaintextLayout = getView().findViewById(R.id.tvPlaintextDecryptedLayout);
-
-        //doVibrate();
-        decryptCiphertext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (checkCiphertextIsPresent()) {
-                    int passphraseLength = 0;
-                    if (passphraseDecryption != null) {
-                        passphraseLength = passphraseDecryption.length();
-                    }
-                    // get the passphrase as char[]
-                    char[] passphraseChar = new char[passphraseLength];
-                    passphraseDecryption.getText().getChars(0, passphraseLength, passphraseChar, 0);
-                    if (passphraseLength < 1) {
-                        Toast.makeText(getContext(),
-                                "Enter a longer passphrase",
-                                Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    plaintextBytes = CryptoManager.aes256GcmPbkdf2Sha256Decryption2(saltBytes, nonceBytes, ciphertextBytes, passphraseChar);
-                    if (plaintextBytes.length > 0) {
-                        plaintext.setText(new String(plaintextBytes, StandardCharsets.UTF_8));
-                    } else {
-                        plaintext.setText("Error on decryption (wrong passphrase ???), try again");
-                    }
-                }
-            }
-        });
     }
 
     @Override
@@ -168,8 +109,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         // in this example the card should be an Ndef Technology Type
 
         System.out.println("NFC tag discovered");
-        // clear the datafields
-        clearEncryptionData();
 
         Ndef mNdef = Ndef.get(tag);
 
@@ -184,78 +123,13 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         // Check that it is an Ndef capable card
         if (mNdef != null) {
 
-            // If we want to read
-            // As we did not turn on the NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-            // We can get the cached Ndef message the system read for us.
-
-            NdefMessage mNdefMessage = mNdef.getCachedNdefMessage();
-            ndefMessageString = mNdefMessage.toString();
-
-            // Make a Sound
-
-            NdefRecord[] record = mNdefMessage.getRecords();
-            String ndefContent = "";
-            int ndefRecordsCount = record.length;
-            ndefContent = "nr of records: " + ndefRecordsCount + "\n";
-            // Success if got to here
-            getActivity().runOnUiThread(() -> {
-                Toast.makeText(getContext(),
-                        "Read from NFC success, number of records: " + ndefRecordsCount,
-                        Toast.LENGTH_SHORT).show();
-            });
-
-            if (ndefRecordsCount > 0) {
-                for (int i = 0; i < ndefRecordsCount; i++) {
-                    short ndefInf = record[i].getTnf();
-                    byte[] ndefType = record[i].getType();
-                    byte[] ndefPayload = record[i].getPayload();
-                    // check for encrypted content in an External NDEF message
-                    short ndefInf4 = (short) 4;
-                    if (Short.compare(ndefInf, ndefInf4) == 0) {
-                        // this is a record type 4
-                        byte[] saltDefinition = "de.androidcrypto.aes256gcmpbkdf2:salt".getBytes(StandardCharsets.UTF_8);
-                        byte[] nonceDefinition = "de.androidcrypto.aes256gcmpbkdf2:nonce".getBytes(StandardCharsets.UTF_8);
-                        byte[] ciphertextDefinition = "de.androidcrypto.aes256gcmpbkdf2:ciphertext".getBytes(StandardCharsets.UTF_8);
-                        // checking for salt
-                        if (Arrays.equals(ndefType, saltDefinition)) {
-                            // salt definition found
-                            saltBytes = Arrays.copyOf(ndefPayload, ndefPayload.length);
-                        }
-                        if (Arrays.equals(ndefType, nonceDefinition)) {
-                            // nonce definition found
-                            nonceBytes = Arrays.copyOf(ndefPayload, ndefPayload.length);
-                        }
-                        if (Arrays.equals(ndefType, ciphertextDefinition)) {
-                            // ciphertext definition found
-                            ciphertextBytes = Arrays.copyOf(ndefPayload, ndefPayload.length);
-                        }
-                    }
-
-                    ndefContent = ndefContent + "rec " + i + " inf: " + ndefInf +
-                            " type: " + bytesToHexNpe(ndefType) +
-                            " payload: " + bytesToHexNpe(ndefPayload) +
-                            " \n" + new String(ndefPayload) + " \n";
-                    String finalNdefContent = ndefContent;
-                    getActivity().runOnUiThread(() -> {
-                        ndefMessage.setText(finalNdefContent);
-                    });
-                    if (checkCiphertextIsPresent()) {
-                        getActivity().runOnUiThread(() -> {
-                            salt.setText(bytesToHexNpe(saltBytes));
-                            nonce.setText(bytesToHexNpe(nonceBytes));
-                            ciphertext.setText(bytesToHexNpe(ciphertextBytes));
-                            ciphertextFound.setVisibility(View.VISIBLE);
-                            passphraseDecryption.setVisibility(View.VISIBLE);
-                            decryptCiphertext.setVisibility(View.VISIBLE);
-                            setLayoutToVisible();
-                        });
-                    }
-                }
-            }
-            doVibrate(getActivity());
-            playSinglePing(getContext());
         }
+        doVibrate(getActivity());
+        playSinglePing(getContext());
     }
+
+
+
     private void showWirelessSettings() {
         Toast.makeText(this.getContext(), "You need to enable NFC", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
@@ -295,60 +169,6 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         super.onPause();
         if (mNfcAdapter != null)
             mNfcAdapter.disableReaderMode(this.getActivity());
-    }
-
-    // checks that a complete set of data of ciphertext
-    // is available
-    private boolean checkCiphertextIsPresent() {
-        boolean saltAvailable = false;
-        boolean nonceAvailable = false;
-        boolean ciphertextAvailable = false;
-        boolean ciphertextIsPresent = false;
-        if (saltBytes.length > 31) saltAvailable = true;
-        if (nonceBytes.length > 11) nonceAvailable = true;
-        if (ciphertextBytes.length > 16) ciphertextAvailable = true;
-        if (saltAvailable && nonceAvailable && ciphertextAvailable) ciphertextIsPresent = true;
-        return ciphertextIsPresent;
-    }
-
-    private void clearEncryptionData() {
-        saltBytes = new byte[0];
-        nonceBytes = new byte[0];
-        ciphertextBytes = new byte[0];
-        plaintextBytes = new byte[0];
-        getActivity().runOnUiThread(() -> {
-            salt.setText("");
-            nonce.setText("");
-            ciphertext.setText("");
-            plaintext.setText("");
-            ciphertextFound.setVisibility(View.GONE);
-            passphraseDecryption.setVisibility(View.GONE);
-            decryptCiphertext.setVisibility(View.GONE);
-            setLayoutVisibilty(false);
-        });
-    }
-
-    private void setLayoutToVisible() {
-        getActivity().runOnUiThread(() -> {
-            setLayoutVisibilty(true);
-        });
-
-    }
-
-    private void setLayoutVisibilty(boolean isVisible) {
-        if (isVisible) {
-            saltLayout.setVisibility(View.VISIBLE);
-            nonceLayout.setVisibility(View.VISIBLE);
-            ciphertextLayout.setVisibility(View.VISIBLE);
-            passphraseLayout.setVisibility(View.VISIBLE);
-            decryptedPlaintextLayout.setVisibility(View.VISIBLE);
-        } else {
-            saltLayout.setVisibility(View.GONE);
-            nonceLayout.setVisibility(View.GONE);
-            ciphertextLayout.setVisibility(View.GONE);
-            passphraseLayout.setVisibility(View.GONE);
-            decryptedPlaintextLayout.setVisibility(View.GONE);
-        }
     }
 
 }
