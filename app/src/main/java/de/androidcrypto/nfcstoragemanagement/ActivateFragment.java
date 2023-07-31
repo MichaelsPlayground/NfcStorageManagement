@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
  * create an instance of this fragment.
  */
 public class ActivateFragment extends Fragment implements NfcAdapter.ReaderCallback {
-
     private static final String TAG = ActivateFragment.class.getName();
 
     // TODO: Rename parameter arguments, choose names that match

@@ -1,32 +1,27 @@
 package de.androidcrypto.nfcstoragemanagement;
 
-import static de.androidcrypto.nfcstoragemanagement.Utils.bytesToHexNpe;
 import static de.androidcrypto.nfcstoragemanagement.Utils.doVibrate;
 import static de.androidcrypto.nfcstoragemanagement.Utils.playSinglePing;
 
-import android.content.Context;
 import android.content.Intent;
-import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NfcA;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.io.IOException;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -43,12 +38,14 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
     private String mParam1;
     private String mParam2;
 
+    private static final String TAG = PersonalizeTagFragment.class.getName();
     private com.google.android.material.textfield.TextInputEditText resultNfcWriting;
 
     private Ntag21xMethods ntagMethods;
     private NfcAdapter mNfcAdapter;
-    private Tag tag;
+    private Tag nTag;
     private NfcA nfcA;
+    private Ndef ndef;
 
     private int identifiedNtagConfigurationPage; // this  is the stating point for any work on configuration
     private byte[] tagUid; // written by onDiscovered
@@ -100,6 +97,68 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         return inflater.inflate(R.layout.fragment_personalize_tag, container, false);
     }
 
+    private boolean runCompletePersonalize() {
+        /*
+        This are the steps that will run when a tag is tapped:
+        1. write the NDEF template to the tag
+        2. disable all existing mirror
+        3. enable UID mirroring
+        4. write the UID-based MAC to the tag
+         */
+
+        // step 1 a: connect to NDEF and write the NDEF template to the tag
+        boolean success = connectNfca(nfcA, ndef);
+        if (!success) {
+            writeToUiAppend(resultNfcWriting, "could not connect with NDEF, aborted");
+            return false;
+        }
+        // step 1 b:
+
+        return false;
+    }
+
+    private boolean connectNfca(NfcA nfcA, Ndef ndef) {
+        if ((nfcA == null) || (ndef == null)) {
+            writeToUiAppend(resultNfcWriting, "nfcA or ndef is NULL, aborted");
+            return false;
+        }
+        try {
+            if (ndef.isConnected()) {
+                Log.d(TAG, "ndef was connected, trying to close ndef");
+                ndef.close();
+                Log.d(TAG, "ndef is closed");
+            }
+            nfcA.connect();
+            writeToUiAppend(resultNfcWriting, "nfcA is connected");
+            return true;
+        } catch (IOException e) {
+            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean connectNdef(NfcA nfcA, Ndef ndef) {
+        if ((nfcA == null) || (ndef == null)) {
+            writeToUiAppend(resultNfcWriting, "nfcA or ndef is NULL, aborted");
+            return false;
+        }
+        try {
+            if (nfcA.isConnected()) {
+                Log.d(TAG, "nfcA was connected, trying to close nfcA");
+                ndef.close();
+                Log.d(TAG, "nfcA is closed");
+            }
+            ndef.connect();
+            writeToUiAppend(resultNfcWriting, "ndef is connected");
+            return true;
+        } catch (IOException e) {
+            writeToUiAppend(resultNfcWriting, "ERROR: IOException " + e.toString());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     // This method is running in another thread when a card is discovered
     // !!!! This method cannot cannot direct interact with the UI Thread
     // Use `runOnUiThread` method to change the UI from this method
@@ -108,8 +167,15 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         // Read and or write to Tag here to the appropriate Tag Technology type class
         // in this example the card should be an Ndef Technology Type
 
-        System.out.println("NFC tag discovered");
+        nfcA = NfcA.get(tag);
+        ndef = Ndef.get(tag);
 
+        writeToUiAppend(resultNfcWriting, "NFC tag discovered");
+
+        boolean personalizeResult = runCompletePersonalize();
+
+
+        /*
         Ndef mNdef = Ndef.get(tag);
 
         if (mNdef == null) {
@@ -124,11 +190,27 @@ public class PersonalizeTagFragment extends Fragment implements NfcAdapter.Reade
         if (mNdef != null) {
 
         }
+        */
         doVibrate(getActivity());
         playSinglePing(getContext());
     }
 
+    /**
+     * section for UI service methods
+     */
 
+    private void writeToUiAppend(TextView textView, String message) {
+        getActivity().runOnUiThread(() -> {
+            String oldString = textView.getText().toString();
+            if (TextUtils.isEmpty(oldString)) {
+                textView.setText(message);
+            } else {
+                String newString = message + "\n" + oldString;
+                textView.setText(newString);
+                System.out.println(message);
+            }
+        });
+    }
 
     private void showWirelessSettings() {
         Toast.makeText(this.getContext(), "You need to enable NFC", Toast.LENGTH_SHORT).show();
