@@ -1,0 +1,30 @@
+http://fluttercrypto.bplaced.net/apps/ntag/get_req2.php
+
+http://fluttercrypto.bplaced.net/apps/ntag/get_req2.php?name=anton
+
+http://fluttercrypto.bplaced.net/apps/ntag/get_req2.php?name=anton&message=hello_everyone
+
+// write a textfile in \data directory with filename = uid.txt
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg1.php?uid=01020304050607&message=hello_everyone
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg1.php?uid=11020304050607&message=hello_everyone
+
+// reads a textfile in \data directory with filename = uid.txt
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg2.php?uid=01020304050607
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg2.php?uid=11020304050607
+
+// verifies the sha256 mac of the uid
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg3.php?uid=01020304050607&mac=78339717
+http://fluttercrypto.bplaced.net/apps/ntag/get_reg3.php?uid=11020304050607&mac=44a852f0
+
+
+ALT:
+http://fluttercrypto.bplaced.net/apps/http/post_req_json.php
+
+http://fluttercrypto.bplaced.net/apps/http/post_req_json_return_request_store.php
+
+http://fluttercrypto.bplaced.net/apps/http/post_req.php
+http://fluttercrypto.bplaced.net/apps/http/post_req.php?name=testuser
+
+http://fluttercrypto.bplaced.net/apps/http/post_req2.php
+http://fluttercrypto.bplaced.net/apps/http/post_req2.php?name=testuser
+http://fluttercrypto.bplaced.net/apps/http/post_req2.php?name=testuser&message=myMessage
